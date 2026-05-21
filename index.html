@@ -2,195 +2,418 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>نظام إدارة فواتير فودافون - كامل</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام إدارة فواتير فودافون</title>
     <style>
-        * {
-            box-sizing: border-box;
+        :root {
+            --red: #e60000;
+            --red-dark: #b80000;
+            --red-light: #fff0f0;
+            --green: #1a9e4a;
+            --green-light: #edfaf3;
+            --yellow: #f0a500;
+            --yellow-light: #fff8e6;
+            --blue: #0077cc;
+            --blue-light: #e8f4ff;
+            --gray: #f5f6f8;
+            --gray-mid: #e0e3e9;
+            --gray-dark: #6b7280;
+            --text: #1a1d23;
+            --white: #ffffff;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f2f5;
-            margin: 0;
-            padding: 20px;
+            background: #eef0f5;
+            min-height: 100vh;
+            padding: 0;
+            color: var(--text);
         }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+        /* ─── Header ─── */
+        .app-header {
+            background: var(--red);
+            color: white;
+            padding: 16px 20px 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(230,0,0,0.3);
         }
-        h1 {
-            font-size: 22px;
-            color: #e60000;
+        .app-header h1 {
+            font-size: clamp(15px, 4vw, 20px);
+            font-weight: 700;
             text-align: center;
+            letter-spacing: 0.3px;
         }
-        h2 {
-            font-size: 18px;
-            margin-top: 20px;
-            border-bottom: 2px solid #e60000;
-            padding-bottom: 5px;
+
+        /* ─── Tab Bar ─── */
+        .tab-bar {
+            display: flex;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-mid);
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            position: sticky;
+            top: 56px;
+            z-index: 99;
+            box-shadow: var(--shadow);
         }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 15px;
-        }
-        input, textarea, button, select {
-            width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            border: 1px solid #ccc;
-            border-radius: 12px;
-            font-size: 14px;
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 12px 8px 10px;
+            font-size: clamp(11px, 2.8vw, 13px);
+            font-weight: 600;
+            color: var(--gray-dark);
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
             font-family: inherit;
         }
-        textarea {
-            height: 120px;
-            direction: ltr;
-            font-size: 12px;
+        .tab-btn.active {
+            color: var(--red);
+            border-bottom-color: var(--red);
         }
-        button {
-            background: #e60000;
-            color: white;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-            font-size: 16px;
+        .tab-btn .tab-icon { display: block; font-size: 18px; margin-bottom: 2px; }
+
+        /* ─── Main Content ─── */
+        .main-content {
+            padding: 16px;
+            max-width: 700px;
+            margin: 0 auto;
         }
-        button.secondary {
-            background: #6c757d;
+
+        /* ─── Cards ─── */
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
         }
-        button.success {
-            background: #28a745;
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--red);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        button.warning {
-            background: #ffc107;
-            color: #333;
+
+        /* ─── Alert Cards ─── */
+        .alert-item {
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            font-size: clamp(12px, 3vw, 13px);
+            line-height: 1.6;
         }
-        button.danger {
-            background: #dc3545;
+        .alert-item.danger { background: #fee2e2; border-right: 4px solid var(--red); }
+        .alert-item.warning { background: var(--yellow-light); border-right: 4px solid var(--yellow); }
+        .alert-item.success { background: var(--green-light); border-right: 4px solid var(--green); }
+        .alert-item.info { background: var(--blue-light); border-right: 4px solid var(--blue); }
+        .alert-item strong { display: block; font-size: 13px; margin-bottom: 3px; }
+        .alert-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
         }
-        .result {
-            margin-top: 20px;
-            background: #f9f9f9;
-            border-radius: 12px;
-            padding: 10px;
-            overflow-x: auto;
+        .badge-red { background: var(--red); color: white; }
+        .badge-orange { background: #f97316; color: white; }
+        .badge-yellow { background: var(--yellow); color: white; }
+        .badge-green { background: var(--green); color: white; }
+
+        /* ─── Summary Cards ─── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+        .stat-box {
+            background: var(--gray);
+            border-radius: var(--radius-sm);
+            padding: 12px 10px;
             text-align: center;
         }
-        th {
-            background: #e60000;
-            color: white;
+        .stat-box .stat-val {
+            font-size: clamp(14px, 4vw, 18px);
+            font-weight: 700;
+            color: var(--red);
+            display: block;
         }
-        .paid {
-            background: #d4edda;
-        }
-        .unpaid {
-            background: #f8d7da;
-        }
-        .overprice {
-            background: #fff3cd;
-        }
-        .alert-card {
-            background: #dc3545;
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-        }
-        .alert-card.warning {
-            background: #ffc107;
-            color: #333;
-        }
-        .alert-card.info {
-            background: #17a2b8;
-        }
-        .summary {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 12px;
-            margin-top: 15px;
-        }
-        .month-selector {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .month-selector input {
-            flex: 2;
-        }
-        .month-selector button {
-            flex: 1;
-            margin-top: 0;
-        }
-        .filter-buttons {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-            flex-wrap: wrap;
-        }
-        .filter-buttons button {
-            flex: 1;
-            margin-top: 0;
-        }
-        .action-btn {
-            padding: 5px 10px;
+        .stat-box .stat-lbl {
             font-size: 11px;
+            color: var(--gray-dark);
+            margin-top: 3px;
+        }
+        .stat-box.green .stat-val { color: var(--green); }
+        .stat-box.blue .stat-val { color: var(--blue); }
+        .stat-box.yellow .stat-val { color: var(--yellow); }
+
+        /* ─── Month Picker ─── */
+        .row-group {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .row-group input {
+            flex: 1;
+        }
+        .row-group button {
+            flex-shrink: 0;
+            width: auto;
+            padding: 10px 14px;
+        }
+
+        /* ─── Form Controls ─── */
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            display: block;
+            margin-bottom: 5px;
+            margin-top: 12px;
+        }
+        label:first-child { margin-top: 0; }
+        input[type="text"], input[type="number"], input[type="month"],
+        input[type="file"], textarea, select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1.5px solid var(--gray-mid);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text);
+            background: var(--white);
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+        textarea {
+            height: 130px;
+            direction: ltr;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        /* ─── Buttons ─── */
+        button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.18s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        button:active { transform: scale(0.97); }
+        .btn-primary { background: var(--red); color: white; }
+        .btn-primary:hover { background: var(--red-dark); }
+        .btn-secondary { background: var(--gray); color: var(--text); }
+        .btn-success { background: var(--green); color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: var(--yellow); color: white; }
+        .btn-info { background: var(--blue); color: white; }
+
+        /* ─── Filter Chips ─── */
+        .filter-chips {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            margin-bottom: 14px;
+            padding-bottom: 2px;
+        }
+        .filter-chips::-webkit-scrollbar { display: none; }
+        .chip {
+            flex-shrink: 0;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1.5px solid var(--gray-mid);
+            background: var(--white);
+            color: var(--gray-dark);
+            cursor: pointer;
+            transition: all 0.18s;
+            white-space: nowrap;
             margin-top: 0;
             width: auto;
         }
-        .tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 20px;
+        .chip.active, .chip:hover {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
         }
-        .tab {
-            flex: 1;
+
+        /* ─── Mobile-First Table (Cards) ─── */
+        .line-cards { margin-top: 4px; }
+        .line-card {
+            background: var(--white);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            border: 1.5px solid var(--gray-mid);
+            transition: all 0.18s;
+        }
+        .line-card.paid { border-color: #86efac; background: #f0fdf4; }
+        .line-card.unpaid { border-color: #fca5a5; background: #fff5f5; }
+        .line-card.overprice { border-color: #fcd34d; background: #fffbeb; }
+        .line-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .line-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .line-phone {
+            font-size: 12px;
+            color: var(--gray-dark);
+            margin-top: 2px;
+            direction: ltr;
+            text-align: right;
+        }
+        .line-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .badge-paid { background: var(--green-light); color: var(--green); }
+        .badge-unpaid { background: #fee2e2; color: var(--red); }
+        .line-card-body {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .line-stat {
+            background: var(--gray);
+            border-radius: 6px;
+            padding: 6px 8px;
             text-align: center;
-            padding: 10px;
-            background: #e9ecef;
-            border-radius: 12px;
+        }
+        .line-stat .ls-val {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .line-stat .ls-lbl {
+            font-size: 10px;
+            color: var(--gray-dark);
+            margin-top: 1px;
+        }
+        .line-stat.diff-pos .ls-val { color: var(--green); }
+        .line-stat.diff-neg .ls-val { color: var(--red); }
+        .line-card-package {
+            font-size: 11px;
+            color: var(--gray-dark);
+            margin-bottom: 8px;
+        }
+        .line-card-action button {
+            margin-top: 0;
+            padding: 9px 12px;
+            font-size: 13px;
+        }
+
+        /* ─── Desktop Table (for wide screens) ─── */
+        @media (min-width: 640px) {
+            .line-cards { display: none; }
+            .desktop-table { display: block; }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+            }
+            th, td {
+                padding: 10px 8px;
+                border: 1px solid var(--gray-mid);
+                text-align: center;
+            }
+            th {
+                background: var(--red);
+                color: white;
+                font-weight: 600;
+            }
+            tr.paid td { background: #f0fdf4; }
+            tr.unpaid td { background: #fff5f5; }
+            tr.overprice td { background: #fffbeb; }
+            .tbl-action-btn {
+                padding: 5px 10px;
+                font-size: 12px;
+                margin: 0;
+                width: auto;
+            }
+        }
+        @media (max-width: 639px) {
+            .desktop-table { display: none; }
+        }
+
+        /* ─── Upload Zone ─── */
+        .upload-zone {
+            border: 2px dashed var(--gray-mid);
+            border-radius: var(--radius);
+            padding: 24px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--red);
+            background: var(--red-light);
+        }
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
             cursor: pointer;
         }
-        .tab.active {
-            background: #e60000;
-            color: white;
-        }
-        .hidden {
-            display: none;
-        }
-        .debt-badge {
-            background: #dc3545;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 20px;
-            font-size: 10px;
-        }
-        .good-badge {
-            background: #28a745;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 20px;
-            font-size: 10px;
-        }
-        .inline-input {
-            width: 80px;
-            padding: 4px;
-            font-size: 11px;
+        .upload-zone-icon { font-size: 36px; margin-bottom: 8px; }
+        .upload-zone-text { font-size: 14px; font-weight: 600; color: var(--gray-dark); }
+        .upload-zone-sub { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+        /* ─── Hidden ─── */
+        .hidden { display: none !important; }
+
+        /* ─── Responsive tweaks ─── */
+        @media (max-width: 380px) {
+            .main-content { padding: 12px 10px; }
+            .line-card-body { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -199,95 +422,126 @@
     </script>
 </head>
 <body>
-<div class="container">
+
+<div class="app-header">
     <h1>📊 نظام إدارة فواتير فودافون</h1>
-    
-    <!-- Tabs -->
-    <div class="tabs">
-        <div class="tab active" onclick="showTab('alerts')">⚠️ التنبيهات</div>
-        <div class="tab" onclick="showTab('all')">📋 كل الخطوط</div>
-        <div class="tab" onclick="showTab('upload')">📎 رفع فاتورة</div>
-        <div class="tab" onclick="showTab('settings')">⚙️ الإعدادات</div>
-    </div>
-    
-    <!-- تبويب التنبيهات -->
+</div>
+
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('alerts', this)">
+        <span class="tab-icon">⚠️</span>التنبيهات
+    </button>
+    <button class="tab-btn" onclick="showTab('all', this)">
+        <span class="tab-icon">📋</span>الخطوط
+    </button>
+    <button class="tab-btn" onclick="showTab('upload', this)">
+        <span class="tab-icon">📎</span>رفع فاتورة
+    </button>
+    <button class="tab-btn" onclick="showTab('settings', this)">
+        <span class="tab-icon">⚙️</span>الإعدادات
+    </button>
+</div>
+
+<div class="main-content">
+
+    <!-- ─── Tab: Alerts ─── -->
     <div id="tab-alerts">
         <div id="alertsContainer"></div>
     </div>
-    
-    <!-- تبويب كل الخطوط -->
+
+    <!-- ─── Tab: All Lines ─── -->
     <div id="tab-all" class="hidden">
-        <div class="month-selector">
-            <input type="month" id="monthPicker">
-            <button class="secondary" onclick="loadMonth()">عرض</button>
+        <div class="card">
+            <div class="row-group">
+                <input type="month" id="monthPicker">
+                <button class="btn-secondary" onclick="loadMonth()" style="margin-top:0;width:auto;">عرض</button>
+            </div>
         </div>
-        <div class="filter-buttons">
-            <button onclick="filterTable('all')">الكل</button>
-            <button onclick="filterTable('unpaid')">عليهم فلوس</button>
-            <button onclick="filterTable('paid')">خلصوا</button>
-            <button onclick="filterTable('overprice')">فاتورة أعلى</button>
+
+        <div class="filter-chips">
+            <button class="chip active" onclick="filterTable('all', this)">الكل</button>
+            <button class="chip" onclick="filterTable('unpaid', this)">عليهم فلوس</button>
+            <button class="chip" onclick="filterTable('paid', this)">خلصوا</button>
+            <button class="chip" onclick="filterTable('overprice', this)">فاتورة أعلى</button>
         </div>
-        <div id="allTableContainer"></div>
-        <div id="summaryContainer" class="summary"></div>
+
+        <div id="statsGrid" class="stats-grid hidden"></div>
+
+        <!-- Mobile cards -->
+        <div id="lineCards" class="line-cards"></div>
+
+        <!-- Desktop table -->
+        <div id="desktopTable" class="desktop-table"></div>
     </div>
-    
-    <!-- تبويب رفع فاتورة -->
+
+    <!-- ─── Tab: Upload ─── -->
     <div id="tab-upload" class="hidden">
-        <label>📅 الشهر:</label>
-        <input type="month" id="uploadMonth">
-        
-        <label>📎 رفع ملف PDF الفاتورة:</label>
-        <input type="file" id="pdfInput" accept=".pdf">
-        
-        <button onclick="uploadAndProcess()">🔄 معالجة الفاتورة وحفظها</button>
-        
+        <div class="card">
+            <div class="card-title">📅 اختر الشهر</div>
+            <input type="month" id="uploadMonth">
+        </div>
+        <div class="card">
+            <div class="card-title">📎 رفع ملف الفاتورة</div>
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="pdfInput" accept=".pdf">
+                <div class="upload-zone-icon">📄</div>
+                <div class="upload-zone-text">اضغط لاختيار ملف PDF</div>
+                <div class="upload-zone-sub" id="uploadFileName">أو اسحب الملف هنا</div>
+            </div>
+            <button class="btn-primary" onclick="uploadAndProcess()">🔄 معالجة الفاتورة وحفظها</button>
+        </div>
         <div id="uploadResult"></div>
     </div>
-    
-    <!-- تبويب الإعدادات -->
+
+    <!-- ─── Tab: Settings ─── -->
     <div id="tab-settings" class="hidden">
-        <h2>📞 الأسماء والأسعار</h2>
-        <textarea id="namesData" placeholder="الاسم,الرقم بدون 0,السعر_اللي_بتحاسب_بيه,نوع_الباقة
+        <div class="card">
+            <div class="card-title">📞 الأسماء والأسعار</div>
+            <label>بيانات الأرقام (الاسم,الرقم,السعر,نوع الباقة)</label>
+            <textarea id="namesData" placeholder="الاسم,الرقم بدون 0,السعر,نوع الباقة
 مثال:
-فتحي صابر1,1009111258,70,FlexRevamp
-الليثى,1050465564,160,BusinessFlex"></textarea>
-        <button class="success" onclick="saveNames()">💾 حفظ الأسماء</button>
-        
-        <div class="add-new">
-            <h3>➕ إضافة رقم جديد</h3>
-            <input type="text" id="newName" placeholder="الاسم">
-            <input type="text" id="newPhone" placeholder="الرقم (بدون 0)">
-            <input type="number" id="newPrice" placeholder="السعر اللي بتحاسب بيه">
-            <input type="text" id="newPackage" placeholder="نوع الباقة">
-            <button class="success" onclick="addNewNumber()">➕ إضافة</button>
+فتحي صابر,1009111258,70,FlexRevamp"></textarea>
+            <button class="btn-success" onclick="saveNames()">💾 حفظ الأسماء</button>
         </div>
-        
-        <button class="danger" onclick="resetAllData()" style="margin-top:20px;">🗑️ مسح كل البيانات</button>
+
+        <div class="card">
+            <div class="card-title">➕ إضافة رقم جديد</div>
+            <label>الاسم</label>
+            <input type="text" id="newName" placeholder="مثال: فتحي صابر">
+            <label>الرقم (بدون 0)</label>
+            <input type="text" id="newPhone" placeholder="مثال: 1009111258">
+            <label>السعر</label>
+            <input type="number" id="newPrice" placeholder="مثال: 70">
+            <label>نوع الباقة</label>
+            <input type="text" id="newPackage" placeholder="مثال: FlexRevamp">
+            <button class="btn-success" onclick="addNewNumber()">➕ إضافة</button>
+        </div>
+
+        <div class="card">
+            <button class="btn-danger" onclick="resetAllData()">🗑️ مسح كل البيانات</button>
+        </div>
     </div>
+
 </div>
 
 <script>
-    // المفتاح للتخزين
-    const STORAGE_NAMES = "vodafone_names";
+    const STORAGE_NAMES  = "vodafone_names";
     const STORAGE_MONTHS = "vodafone_months";
-    
+
     let currentMonthData = [];
-    let currentFilter = "all";
-    let namesMap = new Map();
-    
-    // تحميل الأسماء المحفوظة
+    let currentFilter    = "all";
+    let namesMap         = new Map();
+
+    /* ════════════════ Names ════════════════ */
     function loadNames() {
         const saved = localStorage.getItem(STORAGE_NAMES);
         if (saved) {
             const names = JSON.parse(saved);
             namesMap.clear();
-            names.forEach(n => {
-                namesMap.set(n.phone, { name: n.name, myPrice: n.myPrice, packageType: n.packageType });
-            });
+            names.forEach(n => namesMap.set(n.phone, { name: n.name, myPrice: n.myPrice, packageType: n.packageType }));
             document.getElementById('namesData').value = names.map(n => `${n.name},${n.phone},${n.myPrice},${n.packageType}`).join('\n');
         } else {
-            // بيانات افتراضية من الفاتورة السابقة
-            const defaultNames = [
+            const defaults = [
                 ["فتحي صابر1","1009111258",66.07,"FlexRevamp"],
                 ["الليثى","1050465564",153.49,"BusinessFlex"],
                 ["نادر","1000238985",66.07,"FlexRevamp"],
@@ -295,286 +549,36 @@
                 ["محمد مامون ابوزيد","1010739900",154.72,"FlexRevamp"],
                 ["عبدالرحمن عصام عبدالصادق","1018388851",185.50,"BusinessFlex+"]
             ];
-            defaultNames.forEach(n => {
-                namesMap.set(n[1], { name: n[0], myPrice: n[2], packageType: n[3] });
-            });
+            defaults.forEach(n => namesMap.set(n[1], { name: n[0], myPrice: n[2], packageType: n[3] }));
             saveNamesToStorage();
         }
     }
-    
+
     function saveNamesToStorage() {
         const arr = [];
-        for (let [phone, data] of namesMap.entries()) {
-            arr.push({ phone, name: data.name, myPrice: data.myPrice, packageType: data.packageType });
-        }
+        for (let [phone, data] of namesMap.entries()) arr.push({ phone, ...data });
         localStorage.setItem(STORAGE_NAMES, JSON.stringify(arr));
     }
-    
+
     function saveNames() {
-        const text = document.getElementById('namesData').value;
-        const lines = text.trim().split('\n');
+        const lines = document.getElementById('namesData').value.trim().split('\n');
         namesMap.clear();
         for (let line of lines) {
-            const parts = line.split(',').map(s => s.trim());
-            if (parts.length >= 4) {
-                const phone = parts[1].replace(/^0+/, '');
-                namesMap.set(phone, {
-                    name: parts[0],
-                    myPrice: parseFloat(parts[2]),
-                    packageType: parts[3]
-                });
+            const p = line.split(',').map(s => s.trim());
+            if (p.length >= 4) {
+                const phone = p[1].replace(/^0+/, '');
+                namesMap.set(phone, { name: p[0], myPrice: parseFloat(p[2]), packageType: p[3] });
             }
         }
         saveNamesToStorage();
-        alert("تم حفظ الأسماء بنجاح!");
+        showToast("✅ تم حفظ الأسماء بنجاح!");
         if (currentMonthData.length) loadMonth();
     }
-    
+
     function addNewNumber() {
-        const name = document.getElementById('newName').value;
-        const phone = document.getElementById('newPhone').value.replace(/^0+/, '');
-        const price = parseFloat(document.getElementById('newPrice').value);
-        const packageType = document.getElementById('newPackage').value;
-        
-        if (!name || !phone || isNaN(price) || !packageType) {
-            alert("يرجى ملء جميع الحقول");
-            return;
-        }
-        
-        namesMap.set(phone, { name, myPrice: price, packageType });
-        saveNamesToStorage();
-        
-        // تفريغ الحقول
-        document.getElementById('newName').value = '';
-        document.getElementById('newPhone').value = '';
-        document.getElementById('newPrice').value = '';
-        document.getElementById('newPackage').value = '';
-        
-        // تحديث واجهة الأسماء
-        const arr = [];
-        for (let [p, d] of namesMap.entries()) {
-            arr.push(`${d.name},${p},${d.myPrice},${d.packageType}`);
-        }
-        document.getElementById('namesData').value = arr.join('\n');
-        
-        alert(`تم إضافة ${name} بنجاح!`);
-        if (currentMonthData.length) loadMonth();
-    }
-    
-    // حفظ بيانات شهر
-    function saveMonthData(month, data) {
-        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
-        allMonths[month] = data;
-        localStorage.setItem(STORAGE_MONTHS, JSON.stringify(allMonths));
-    }
-    
-    function loadMonthData(month) {
-        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
-        return allMonths[month] || [];
-    }
-    
-    async function uploadAndProcess() {
-        const fileInput = document.getElementById('pdfInput');
-        const month = document.getElementById('uploadMonth').value;
-        
-        if (!fileInput.files.length) {
-            alert("يرجى رفع ملف PDF");
-            return;
-        }
-        if (!month) {
-            alert("يرجى اختيار الشهر");
-            return;
-        }
-        
-        const file = fileInput.files[0];
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        
-        let fullText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            fullText += textContent.items.map(item => item.str).join(' ') + ' ';
-        }
-        
-        // استخراج الأرقام والأسعار
-        const linesSplit = fullText.split(/\s+/);
-        const extracted = [];
-        for (let idx = 0; idx < linesSplit.length; idx++) {
-            let token = linesSplit[idx];
-            if (/^1[0-9]{9}$/.test(token)) {
-                for (let offset = 1; offset <= 5; offset++) {
-                    let nextToken = linesSplit[idx + offset];
-                    if (nextToken && /^[0-9]+(\.[0-9]+)?$/.test(nextToken)) {
-                        extracted.push({ phone: token, invoicePrice: parseFloat(nextToken) });
-                        break;
-                    }
-                }
-            }
-        }
-        
-        // إزالة التكرارات
-        const uniqueMap = new Map();
-        for (let item of extracted) {
-            if (!uniqueMap.has(item.phone)) {
-                uniqueMap.set(item.phone, item.invoicePrice);
-            }
-        }
-        
-        // تجميع النتائج
-        const monthData = [];
-        for (let [phone, invoicePrice] of uniqueMap.entries()) {
-            const contact = namesMap.get(phone);
-            if (contact) {
-                monthData.push({
-                    phone: phone,
-                    name: contact.name,
-                    myPrice: contact.myPrice,
-                    invoicePrice: invoicePrice,
-                    packageType: contact.packageType,
-                    paid: false
-                });
-            } else {
-                monthData.push({
-                    phone: phone,
-                    name: "⚠️ بدون اسم",
-                    myPrice: 0,
-                    invoicePrice: invoicePrice,
-                    packageType: "غير معروف",
-                    paid: false
-                });
-            }
-        }
-        
-        saveMonthData(month, monthData);
-        document.getElementById('uploadResult').innerHTML = `<div class="alert-card info">✅ تم حفظ فاتورة شهر ${month} بنجاح! (${monthData.length} رقم)</div>`;
-        
-        // تحديث التنبيهات
-        showTab('alerts');
-    }
-    
-    function loadMonth() {
-        const month = document.getElementById('monthPicker').value;
-        if (!month) return;
-        
-        currentMonthData = loadMonthData(month);
-        displayAllTable(currentMonthData);
-        updateSummary(currentMonthData);
-    }
-    
-    function displayAllTable(data) {
-        let filtered = [...data];
-        if (currentFilter === 'paid') filtered = data.filter(d => d.paid === true);
-        if (currentFilter === 'unpaid') filtered = data.filter(d => d.paid !== true);
-        if (currentFilter === 'overprice') filtered = data.filter(d => d.invoicePrice > d.myPrice);
-        
-        if (filtered.length === 0) {
-            document.getElementById('allTableContainer').innerHTML = "<p>لا توجد بيانات</p>";
-            return;
-        }
-        
-        let html = '<table><tr><th>الاسم</th><th>الرقم</th><th>نوع الباقة</th><th>سعرك</th><th>سعر الفاتورة</th><th>الفرق</th><th>الحالة</th><th></th></tr>';
-        
-        for (let d of filtered) {
-            const diff = d.myPrice - d.invoicePrice;
-            const diffClass = diff >= 0 ? 'profit-positive' : 'profit-negative';
-            const statusClass = d.paid ? 'paid' : 'unpaid';
-            const overpriceClass = d.invoicePrice > d.myPrice ? 'overprice' : '';
-            
-            html += `<tr class="${statusClass} ${overpriceClass}">
-                        <td>${d.name}</td>
-                        <td>0${d.phone}</td>
-                        <td>${d.packageType}</td>
-                        <td>${d.myPrice.toFixed(2)}</td>
-                        <td>${d.invoicePrice.toFixed(2)}</td>
-                        <td class="${diffClass}">${diff.toFixed(2)}</td>
-                        <td>${d.paid ? '✅ دفع' : '❌ عليه'}</td>
-                        <td><button class="action-btn ${d.paid ? '' : 'pay'}" onclick="togglePaid('${d.phone}')">${d.paid ? '🗑️ إلغاء' : '💰 دفع'}</button></td>
-                      </tr>`;
-        }
-        html += '</table>';
-        document.getElementById('allTableContainer').innerHTML = html;
-    }
-    
-    function updateSummary(data) {
-        const totalMyPrice = data.reduce((s, d) => s + d.myPrice, 0);
-        const totalInvoice = data.reduce((s, d) => s + d.invoicePrice, 0);
-        const totalPaid = data.filter(d => d.paid).reduce((s, d) => s + d.myPrice, 0);
-        const totalUnpaid = totalMyPrice - totalPaid;
-        const profit = totalMyPrice - totalInvoice;
-        
-        document.getElementById('summaryContainer').innerHTML = `
-            <h3>📈 ملخص الشهر</h3>
-            <p>💰 إجمالي المطلوب لشركة فودافون: ${totalInvoice.toFixed(2)} ج</p>
-            <p>💵 إجمالي اللي هتتحصله: ${totalMyPrice.toFixed(2)} ج</p>
-            <p>📦 أرباحك المتوقعة: ${profit.toFixed(2)} ج</p>
-            <p>✅ تم تحصيل: ${totalPaid.toFixed(2)} ج</p>
-            <p>❌ متبقي عليهم: ${totalUnpaid.toFixed(2)} ج</p>
-        `;
-    }
-    
-    function togglePaid(phone) {
-        const month = document.getElementById('monthPicker').value;
-        const data = loadMonthData(month);
-        const index = data.findIndex(d => d.phone === phone);
-        if (index !== -1) {
-            data[index].paid = !data[index].paid;
-            saveMonthData(month, data);
-            loadMonth();
-            showTab('alerts');
-        }
-    }
-    
-    function filterTable(type) {
-        currentFilter = type;
-        loadMonth();
-    }
-    
-    function showTab(tabName) {
-        document.getElementById('tab-alerts').classList.add('hidden');
-        document.getElementById('tab-all').classList.add('hidden');
-        document.getElementById('tab-upload').classList.add('hidden');
-        document.getElementById('tab-settings').classList.add('hidden');
-        
-        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-        
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        event.target.classList.add('active');
-        
-        if (tabName === 'alerts') generateAlerts();
-        if (tabName === 'all') loadMonth();
-    }
-    
-    function generateAlerts() {
-        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
-        const months = Object.keys(allMonths).sort().reverse();
-        
-        let alertsHtml = '';
-        
-        // تجميع المديونيات لكل رقم
-        const debtMap = new Map();
-        
-        for (let month of months) {
-            const data = allMonths[month];
-            for (let d of data) {
-                if (!d.paid && d.myPrice > 0) {
-                    if (!debtMap.has(d.phone)) {
-                        debtMap.set(d.phone, { name: d.name, phone: d.phone, months: [], totalDebt: 0 });
-                    }
-                    const entry = debtMap.get(d.phone);
-                    entry.months.push(month);
-                    entry.totalDebt += d.myPrice;
-                }
-            }
-        }
-        
-        // تنبيه: فاتورة أعلى من السعر
-        alertsHtml += '<h2>⚠️ فواتير أعلى من السعر المتفق عليه</h2>';
-        let hasOverprice = false;
-        for (let month of months) {
-            const data = allMonths[month];
-            for (let d of data) {
-                if (d.invoicePrice > d.myPrice) {
-                    hasOverprice = true;
-                    alertsHtml += `<div class="alert-card warning">
-      
+        const name        = document.getElementById('newName').value.trim();
+        const phone       = document.getElementById('newPhone').value.trim().replace(/^0+/, '');
+        const price       = parseFloat(document.getElementById('newPrice').value);
+        const packageType = document.getElementById('newPackage').value.trim();
+
+        if (!name || !
