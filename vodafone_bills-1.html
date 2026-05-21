@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام إدارة فواتير فودافون</title>
+    <style>
+        :root {
+            --red: #e60000;
+            --red-dark: #b80000;
+            --red-light: #fff0f0;
+            --green: #1a9e4a;
+            --green-light: #edfaf3;
+            --yellow: #f0a500;
+            --yellow-light: #fff8e6;
+            --blue: #0077cc;
+            --blue-light: #e8f4ff;
+            --gray: #f5f6f8;
+            --gray-mid: #e0e3e9;
+            --gray-dark: #6b7280;
+            --text: #1a1d23;
+            --white: #ffffff;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #eef0f5;
+            min-height: 100vh;
+            padding: 0;
+            color: var(--text);
+        }
+
+        /* ─── Header ─── */
+        .app-header {
+            background: var(--red);
+            color: white;
+            padding: 16px 20px 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(230,0,0,0.3);
+        }
+        .app-header h1 {
+            font-size: clamp(15px, 4vw, 20px);
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+
+        /* ─── Tab Bar ─── */
+        .tab-bar {
+            display: flex;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-mid);
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            position: sticky;
+            top: 56px;
+            z-index: 99;
+            box-shadow: var(--shadow);
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 12px 8px 10px;
+            font-size: clamp(11px, 2.8vw, 13px);
+            font-weight: 600;
+            color: var(--gray-dark);
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .tab-btn.active {
+            color: var(--red);
+            border-bottom-color: var(--red);
+        }
+        .tab-btn .tab-icon { display: block; font-size: 18px; margin-bottom: 2px; }
+
+        /* ─── Main Content ─── */
+        .main-content {
+            padding: 16px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* ─── Cards ─── */
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--red);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ─── Alert Cards ─── */
+        .alert-item {
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            font-size: clamp(12px, 3vw, 13px);
+            line-height: 1.6;
+        }
+        .alert-item.danger { background: #fee2e2; border-right: 4px solid var(--red); }
+        .alert-item.warning { background: var(--yellow-light); border-right: 4px solid var(--yellow); }
+        .alert-item.success { background: var(--green-light); border-right: 4px solid var(--green); }
+        .alert-item.info { background: var(--blue-light); border-right: 4px solid var(--blue); }
+        .alert-item strong { display: block; font-size: 13px; margin-bottom: 3px; }
+        .alert-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        .badge-red { background: var(--red); color: white; }
+        .badge-orange { background: #f97316; color: white; }
+        .badge-yellow { background: var(--yellow); color: white; }
+        .badge-green { background: var(--green); color: white; }
+
+        /* ─── Summary Cards ─── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .stat-box {
+            background: var(--gray);
+            border-radius: var(--radius-sm);
+            padding: 12px 10px;
+            text-align: center;
+        }
+        .stat-box .stat-val {
+            font-size: clamp(14px, 4vw, 18px);
+            font-weight: 700;
+            color: var(--red);
+            display: block;
+        }
+        .stat-box .stat-lbl {
+            font-size: 11px;
+            color: var(--gray-dark);
+            margin-top: 3px;
+        }
+        .stat-box.green .stat-val { color: var(--green); }
+        .stat-box.blue .stat-val { color: var(--blue); }
+        .stat-box.yellow .stat-val { color: var(--yellow); }
+
+        /* ─── Month Picker ─── */
+        .row-group {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .row-group input {
+            flex: 1;
+        }
+        .row-group button {
+            flex-shrink: 0;
+            width: auto;
+            padding: 10px 14px;
+        }
+
+        /* ─── Form Controls ─── */
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            display: block;
+            margin-bottom: 5px;
+            margin-top: 12px;
+        }
+        label:first-child { margin-top: 0; }
+        input[type="text"], input[type="number"], input[type="month"],
+        input[type="file"], textarea, select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1.5px solid var(--gray-mid);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text);
+            background: var(--white);
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+        textarea {
+            height: 130px;
+            direction: ltr;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        /* ─── Buttons ─── */
+        button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.18s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        button:active { transform: scale(0.97); }
+        .btn-primary { background: var(--red); color: white; }
+        .btn-primary:hover { background: var(--red-dark); }
+        .btn-secondary { background: var(--gray); color: var(--text); }
+        .btn-success { background: var(--green); color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: var(--yellow); color: white; }
+        .btn-info { background: var(--blue); color: white; }
+
+        /* ─── Filter Chips ─── */
+        .filter-chips {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            margin-bottom: 14px;
+            padding-bottom: 2px;
+        }
+        .filter-chips::-webkit-scrollbar { display: none; }
+        .chip {
+            flex-shrink: 0;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1.5px solid var(--gray-mid);
+            background: var(--white);
+            color: var(--gray-dark);
+            cursor: pointer;
+            transition: all 0.18s;
+            white-space: nowrap;
+            margin-top: 0;
+            width: auto;
+        }
+        .chip.active, .chip:hover {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        /* ─── Mobile-First Table (Cards) ─── */
+        .line-cards { margin-top: 4px; }
+        .line-card {
+            background: var(--white);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            border: 1.5px solid var(--gray-mid);
+            transition: all 0.18s;
+        }
+        .line-card.paid { border-color: #86efac; background: #f0fdf4; }
+        .line-card.unpaid { border-color: #fca5a5; background: #fff5f5; }
+        .line-card.overprice { border-color: #fcd34d; background: #fffbeb; }
+        .line-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .line-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .line-phone {
+            font-size: 12px;
+            color: var(--gray-dark);
+            margin-top: 2px;
+            direction: ltr;
+            text-align: right;
+        }
+        .line-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .badge-paid { background: var(--green-light); color: var(--green); }
+        .badge-unpaid { background: #fee2e2; color: var(--red); }
+        .line-card-body {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .line-stat {
+            background: var(--gray);
+            border-radius: 6px;
+            padding: 6px 8px;
+            text-align: center;
+        }
+        .line-stat .ls-val {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .line-stat .ls-lbl {
+            font-size: 10px;
+            color: var(--gray-dark);
+            margin-top: 1px;
+        }
+        .line-stat.diff-pos .ls-val { color: var(--green); }
+        .line-stat.diff-neg .ls-val { color: var(--red); }
+        .line-card-package {
+            font-size: 11px;
+            color: var(--gray-dark);
+            margin-bottom: 8px;
+        }
+        .line-card-action button {
+            margin-top: 0;
+            padding: 9px 12px;
+            font-size: 13px;
+        }
+
+        /* ─── Desktop Table (for wide screens) ─── */
+        @media (min-width: 640px) {
+            .line-cards { display: none; }
+            .desktop-table { display: block; }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+            }
+            th, td {
+                padding: 10px 8px;
+                border: 1px solid var(--gray-mid);
+                text-align: center;
+            }
+            th {
+                background: var(--red);
+                color: white;
+                font-weight: 600;
+            }
+            tr.paid td { background: #f0fdf4; }
+            tr.unpaid td { background: #fff5f5; }
+            tr.overprice td { background: #fffbeb; }
+            .tbl-action-btn {
+                padding: 5px 10px;
+                font-size: 12px;
+                margin: 0;
+                width: auto;
+            }
+        }
+        @media (max-width: 639px) {
+            .desktop-table { display: none; }
+        }
+
+        /* ─── Upload Zone ─── */
+        .upload-zone {
+            border: 2px dashed var(--gray-mid);
+            border-radius: var(--radius);
+            padding: 24px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--red);
+            background: var(--red-light);
+        }
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .upload-zone-icon { font-size: 36px; margin-bottom: 8px; }
+        .upload-zone-text { font-size: 14px; font-weight: 600; color: var(--gray-dark); }
+        .upload-zone-sub { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+        /* ─── Hidden ─── */
+        .hidden { display: none !important; }
+
+        /* ─── Responsive tweaks ─── */
+        @media (max-width: 380px) {
+            .main-content { padding: 12px 10px; }
+            .line-card-body { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+</head>
+<body>
+
+<div class="app-header">
+    <h1>📊 نظام إدارة فواتير فودافون</h1>
+</div>
+
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('alerts', this)">
+        <span class="tab-icon">⚠️</span>التنبيهات
+    </button>
+    <button class="tab-btn" onclick="showTab('all', this)">
+        <span class="tab-icon">📋</span>الخطوط
+    </button>
+    <button class="tab-btn" onclick="showTab('upload', this)">
+        <span class="tab-icon">📎</span>رفع فاتورة
+    </button>
+    <button class="tab-btn" onclick="showTab('settings', this)">
+        <span class="tab-icon">⚙️</span>الإعدادات
+    </button>
+</div>
+
+<div class="main-content">
+
+    <!-- ─── Tab: Alerts ─── -->
+    <div id="tab-alerts">
+        <div id="alertsContainer"></div>
+    </div>
+
+    <!-- ─── Tab: All Lines ─── -->
+    <div id="tab-all" class="hidden">
+        <div class="card">
+            <div class="row-group">
+                <input type="month" id="monthPicker">
+                <button class="btn-secondary" onclick="loadMonth()" style="margin-top:0;width:auto;">عرض</button>
+            </div>
+        </div>
+
+        <div class="filter-chips">
+            <button class="chip active" onclick="filterTable('all', this)">الكل</button>
+            <button class="chip" onclick="filterTable('unpaid', this)">عليهم فلوس</button>
+            <button class="chip" onclick="filterTable('paid', this)">خلصوا</button>
+            <button class="chip" onclick="filterTable('overprice', this)">فاتورة أعلى</button>
+        </div>
+
+        <div id="statsGrid" class="stats-grid hidden"></div>
+
+        <!-- Mobile cards -->
+        <div id="lineCards" class="line-cards"></div>
+
+        <!-- Desktop table -->
+        <div id="desktopTable" class="desktop-table"></div>
+    </div>
+
+    <!-- ─── Tab: Upload ─── -->
+    <div id="tab-upload" class="hidden">
+        <div class="card">
+            <div class="card-title">📅 اختر الشهر</div>
+            <input type="month" id="uploadMonth">
+        </div>
+        <div class="card">
+            <div class="card-title">📎 رفع ملف الفاتورة</div>
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="pdfInput" accept=".pdf">
+                <div class="upload-zone-icon">📄</div>
+                <div class="upload-zone-text">اضغط لاختيار ملف PDF</div>
+                <div class="upload-zone-sub" id="uploadFileName">أو اسحب الملف هنا</div>
+            </div>
+            <button class="btn-primary" onclick="uploadAndProcess()">🔄 معالجة الفاتورة وحفظها</button>
+        </div>
+        <div id="uploadResult"></div>
+    </div>
+
+    <!-- ─── Tab: Settings ─── -->
+    <div id="tab-settings" class="hidden">
+        <div class="card">
+            <div class="card-title">📞 الأسماء والأسعار</div>
+            <label>بيانات الأرقام (الاسم,الرقم,السعر,نوع الباقة)</label>
+            <textarea id="namesData" placeholder="الاسم,الرقم بدون 0,السعر,نوع الباقة
+مثال:
+فتحي صابر,1009111258,70,FlexRevamp"></textarea>
+            <button class="btn-success" onclick="saveNames()">💾 حفظ الأسماء</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">➕ إضافة رقم جديد</div>
+            <label>الاسم</label>
+            <input type="text" id="newName" placeholder="مثال: فتحي صابر">
+            <label>الرقم (بدون 0)</label>
+            <input type="text" id="newPhone" placeholder="مثال: 1009111258">
+            <label>السعر</label>
+            <input type="number" id="newPrice" placeholder="مثال: 70">
+            <label>نوع الباقة</label>
+            <input type="text" id="newPackage" placeholder="مثال: FlexRevamp">
+            <button class="btn-success" onclick="addNewNumber()">➕ إضافة</button>
+        </div>
+
+        <div class="card">
+            <button class="btn-danger" onclick="resetAllData()">🗑️ مسح كل البيانات</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const STORAGE_NAMES  = "vodafone_names";
+    const STORAGE_MONTHS = "vodafone_months";
+
+    let currentMonthData = [];
+    let currentFilter    = "all";
+    let namesMap         = new Map();
+
+    /* ════════════════ Names ════════════════ */
+    function loadNames() {
+        const saved = localStorage.getItem(STORAGE_NAMES);
+        if (saved) {
+            const names = JSON.parse(saved);
+            namesMap.clear();
+            names.forEach(n => namesMap.set(n.phone, { name: n.name, myPrice: n.myPrice, packageType: n.packageType }));
+            document.getElementById('namesData').value = names.map(n => `${n.name},${n.phone},${n.myPrice},${n.packageType}`).join('\n');
+        } else {
+            const defaults = [
+                ["فتحي صابر1","1009111258",66.07,"FlexRevamp"],
+                ["الليثى","1050465564",153.49,"BusinessFlex"],
+                ["نادر","1000238985",66.07,"FlexRevamp"],
+                ["ايمن جمال","1050558655",112.86,"FlexRevamp"],
+                ["محمد مامون ابوزيد","1010739900",154.72,"FlexRevamp"],
+                ["عبدالرحمن عصام عبدالصادق","1018388851",185.50,"BusinessFlex+"]
+            ];
+            defaults.forEach(n => namesMap.set(n[1], { name: n[0], myPrice: n[2], packageType: n[3] }));
+            saveNamesToStorage();
+        }
+    }
+
+    function saveNamesToStorage() {
+        const arr = [];
+        for (let [phone, data] of namesMap.entries()) arr.push({ phone, ...data });
+        localStorage.setItem(STORAGE_NAMES, JSON.stringify(arr));
+    }
+
+    function saveNames() {
+        const lines = document.getElementById('namesData').value.trim().split('\n');
+        namesMap.clear();
+        for (let line of lines) {
+            const p = line.split(',').map(s => s.trim());
+            if (p.length >= 4) {
+                const phone = p[1].replace(/^0+/, '');
+                namesMap.set(phone, { name: p[0], myPrice: parseFloat(p[2]), packageType: p[3] });
+            }
+        }
+        saveNamesToStorage();
+        showToast("✅ تم حفظ الأسماء بنجاح!");
+        if (currentMonthData.length) loadMonth();
+    }
+
+    function addNewNumber() {
+        const name        = document.getElementById('newName').value.trim();
+        const phone       = document.getElementById('newPhone').value.trim().replace(/^0+/, '');
+        const price       = parseFloat(document.getElementById('newPrice').value);
+        const packageType = document.getElementById('newPackage').value.trim();
+
+        if (!name || !phone || isNaN(price) || !packageType) { showToast("⚠️ يرجى ملء جميع الحقول", "warning"); return; }
+
+        namesMap.set(phone, { name, myPrice: price, packageType });
+        saveNamesToStorage();
+
+        ['newName','newPhone','newPrice','newPackage'].forEach(id => document.getElementById(id).value = '');
+        const arr = [];
+        for (let [p, d] of namesMap.entries()) arr.push(`${d.name},${p},${d.myPrice},${d.packageType}`);
+        document.getElementById('namesData').value = arr.join('\n');
+
+        showToast(`✅ تم إضافة ${name} بنجاح!`);
+        if (currentMonthData.length) loadMonth();
+    }
+
+    /* ════════════════ Month Data ════════════════ */
+    function saveMonthData(month, data) {
+        const all = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
+        all[month] = data;
+        localStorage.setItem(STORAGE_MONTHS, JSON.stringify(all));
+    }
+
+    function loadMonthData(month) {
+        const all = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
+        return all[month] || [];
+    }
+
+    /* ════════════════ Upload ════════════════ */
+    async function uploadAndProcess() {
+        const fileInput = document.getElementById('pdfInput');
+        const month     = document.getElementById('uploadMonth').value;
+
+        if (!fileInput.files.length) { showToast("⚠️ يرجى رفع ملف PDF", "warning"); return; }
+        if (!month)                  { showToast("⚠️ يرجى اختيار الشهر", "warning"); return; }
+
+        const resultDiv = document.getElementById('uploadResult');
+        resultDiv.innerHTML = '<div class="alert-item info">⏳ جاري معالجة الفاتورة…</div>';
+
+        try {
+            const arrayBuffer = await fileInput.files[0].arrayBuffer();
+            const pdf         = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page        = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText         += textContent.items.map(item => item.str).join(' ') + ' ';
+            }
+
+            const tokens   = fullText.split(/\s+/);
+            const extracted = [];
+            for (let idx = 0; idx < tokens.length; idx++) {
+                if (/^1[0-9]{9}$/.test(tokens[idx])) {
+                    for (let offset = 1; offset <= 5; offset++) {
+                        const next = tokens[idx + offset];
+                        if (next && /^[0-9]+(\.[0-9]+)?$/.test(next)) {
+                            extracted.push({ phone: tokens[idx], invoicePrice: parseFloat(next) });
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const uniqueMap = new Map();
+            for (let item of extracted) if (!uniqueMap.has(item.phone)) uniqueMap.set(item.phone, item.invoicePrice);
+
+            const monthData = [];
+            for (let [phone, invoicePrice] of uniqueMap.entries()) {
+                const contact = namesMap.get(phone);
+                monthData.push(contact
+                    ? { phone, name: contact.name, myPrice: contact.myPrice, invoicePrice, packageType: contact.packageType, paid: false }
+                    : { phone, name: "⚠️ بدون اسم", myPrice: 0, invoicePrice, packageType: "غير معروف", paid: false }
+                );
+            }
+
+            saveMonthData(month, monthData);
+            resultDiv.innerHTML = `<div class="alert-item info">✅ تم حفظ فاتورة شهر ${month} بنجاح! (${monthData.length} رقم)</div>`;
+            showTab('alerts', document.querySelector('.tab-btn'));
+        } catch (err) {
+            resultDiv.innerHTML = `<div class="alert-item danger">❌ حدث خطأ: ${err.message}</div>`;
+        }
+    }
+
+    /* ════════════════ Display ════════════════ */
+    function loadMonth() {
+        const month = document.getElementById('monthPicker').value;
+        if (!month) return;
+        currentMonthData = loadMonthData(month);
+        renderLines();
+        renderStats();
+    }
+
+    function renderLines() {
+        let data = [...currentMonthData];
+        if (currentFilter === 'paid')      data = data.filter(d => d.paid);
+        if (currentFilter === 'unpaid')    data = data.filter(d => !d.paid);
+        if (currentFilter === 'overprice') data = data.filter(d => d.invoicePrice > d.myPrice);
+
+        if (!data.length) {
+            document.getElementById('lineCards').innerHTML = '<div class="alert-item info">لا توجد بيانات لهذا الشهر</div>';
+            document.getElementById('desktopTable').innerHTML = '';
+            return;
+        }
+
+        // Mobile cards
+        let cardsHtml = '';
+        for (let d of data) {
+            const diff       = d.myPrice - d.invoicePrice;
+            const cardClass  = d.invoicePrice > d.myPrice ? 'overprice' : (d.paid ? 'paid' : 'unpaid');
+            const diffClass  = diff >= 0 ? 'diff-pos' : 'diff-neg';
+            const badgeClass = d.paid ? 'badge-paid' : 'badge-unpaid';
+            const badgeText  = d.paid ? '✅ دفع' : '❌ لم يدفع';
+
+            cardsHtml += `
+            <div class="line-card ${cardClass}">
+                <div class="line-card-top">
+                    <div>
+                        <div class="line-name">${d.name}</div>
+                        <div class="line-phone" dir="ltr">0${d.phone}</div>
+                    </div>
+                    <span class="line-status-badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div class="line-card-package">📦 ${d.packageType}</div>
+                <div class="line-card-body">
+                    <div class="line-stat"><div class="ls-val">${d.myPrice.toFixed(0)}</div><div class="ls-lbl">سعرك</div></div>
+                    <div class="line-stat"><div class="ls-val">${d.invoicePrice.toFixed(0)}</div><div class="ls-lbl">الفاتورة</div></div>
+                    <div class="line-stat ${diffClass}"><div class="ls-val">${diff.toFixed(0)}</div><div class="ls-lbl">الفرق</div></div>
+                </div>
+                <div class="line-card-action">
+                    <button class="${d.paid ? 'btn-secondary' : 'btn-success'}" onclick="togglePaid('${d.phone}')">
+                        ${d.paid ? '🗑️ إلغاء الدفع' : '💰 تسجيل الدفع'}
+                    </button>
+                </div>
+            </div>`;
+        }
+        document.getElementById('lineCards').innerHTML = cardsHtml;
+
+        // Desktop table
+        let tableHtml = `<div style="overflow-x:auto"><table>
+            <tr><th>الاسم</th><th>الرقم</th><th>الباقة</th><th>سعرك</th><th>الفاتورة</th><th>الفرق</th><th>الحالة</th><th>إجراء</th></tr>`;
+        for (let d of data) {
+            const diff      = d.myPrice - d.invoicePrice;
+            const rowClass  = d.invoicePrice > d.myPrice ? 'overprice' : (d.paid ? 'paid' : 'unpaid');
+            const diffColor = diff >= 0 ? 'color:#1a9e4a' : 'color:#e60000';
+            tableHtml += `<tr class="${rowClass}">
+                <td>${d.name}</td><td dir="ltr">0${d.phone}</td><td>${d.packageType}</td>
+                <td>${d.myPrice.toFixed(2)}</td><td>${d.invoicePrice.toFixed(2)}</td>
+                <td style="${diffColor}">${diff.toFixed(2)}</td>
+                <td>${d.paid ? '✅ دفع' : '❌ عليه'}</td>
+                <td><button class="tbl-action-btn ${d.paid ? 'btn-secondary' : 'btn-success'}" onclick="togglePaid('${d.phone}')">
+                    ${d.paid ? 'إلغاء' : 'دفع'}
+                </button></td>
+            </tr>`;
+        }
+        tableHtml += '</table></div>';
+        document.getElementById('desktopTable').innerHTML = tableHtml;
+    }
+
+    function renderStats() {
+        const data = currentMonthData;
+        if (!data.length) { document.getElementById('statsGrid').classList.add('hidden'); return; }
+
+        const totalInvoice = data.reduce((s, d) => s + d.invoicePrice, 0);
+        const totalMy      = data.reduce((s, d) => s + d.myPrice, 0);
+        const totalPaid    = data.filter(d => d.paid).reduce((s, d) => s + d.myPrice, 0);
+        const totalUnpaid  = totalMy - totalPaid;
+        const profit       = totalMy - totalInvoice;
+
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-box"><span class="stat-val">${totalInvoice.toFixed(0)} ج</span><div class="stat-lbl">فودافون تطلب</div></div>
+            <div class="stat-box blue"><span class="stat-val">${totalMy.toFixed(0)} ج</span><div class="stat-lbl">هتتحصله</div></div>
+            <div class="stat-box green"><span class="stat-val">${profit.toFixed(0)} ج</span><div class="stat-lbl">أرباحك</div></div>
+            <div class="stat-box"><span class="stat-val">${totalPaid.toFixed(0)} ج</span><div class="stat-lbl">تم تحصيله</div></div>
+            <div class="stat-box yellow"><span class="stat-val">${totalUnpaid.toFixed(0)} ج</span><div class="stat-lbl">متبقي عليهم</div></div>
+            <div class="stat-box"><span class="stat-val">${data.filter(d=>d.paid).length}/${data.length}</span><div class="stat-lbl">دفعوا</div></div>
+        `;
+        document.getElementById('statsGrid').classList.remove('hidden');
+    }
+
+    function togglePaid(phone) {
+        const month = document.getElementById('monthPicker').value;
+        const data  = loadMonthData(month);
+        const idx   = data.findIndex(d => d.phone === phone);
+        if (idx !== -1) {
+            data[idx].paid = !data[idx].paid;
+            saveMonthData(month, data);
+            currentMonthData = data;
+            renderLines();
+            renderStats();
+            generateAlerts();
+        }
+    }
+
+    function filterTable(type, el) {
+        currentFilter = type;
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        renderLines();
+    }
+
+    /* ════════════════ Alerts ════════════════ */
+    function generateAlerts() {
+        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
+        const months    = Object.keys(allMonths).sort().reverse();
+
+        if (!months.length) {
+            document.getElementById('alertsContainer').innerHTML = `
+                <div class="alert-item info">ℹ️ لا توجد فواتير محفوظة بعد. ارفع فاتورة من تبويب "رفع فاتورة"</div>`;
+            return;
+        }
+
+        let html = '';
+
+        // Overprice alerts
+        const overItems = [];
+        for (let month of months)
+            for (let d of allMonths[month])
+                if (d.invoicePrice > d.myPrice) overItems.push({ ...d, month });
+
+        html += `<div class="card"><div class="card-title">📈 فواتير أعلى من المتفق عليه</div>`;
+        if (overItems.length) {
+            for (let d of overItems) {
+                html += `<div class="alert-item warning">
+                    <strong>${d.name} (0${d.phone}) — ${d.month}</strong>
+                    السعر المتفق عليه: ${d.myPrice} ج | الفاتورة: ${d.invoicePrice} ج<br>
+                    <span class="alert-badge badge-orange">زيادة ${(d.invoicePrice - d.myPrice).toFixed(2)} ج</span>
+                </div>`;
+            }
+        } else {
+            html += `<div class="alert-item success">✅ لا توجد فواتير أعلى من المتفق عليه</div>`;
+        }
+        html += '</div>';
+
+        // Debt alerts
+        const debtMap = new Map();
+        for (let month of months) {
+            for (let d of allMonths[month]) {
+                if (!d.paid && d.myPrice > 0) {
+                    if (!debtMap.has(d.phone)) debtMap.set(d.phone, { name: d.name, phone: d.phone, months: [], totalDebt: 0 });
+                    const entry = debtMap.get(d.phone);
+                    entry.months.push(month);
+                    entry.totalDebt += d.myPrice;
+                }
+            }
+        }
+
+        html += `<div class="card"><div class="card-title">💰 المديونيات</div>`;
+        let hasDebt = false;
+        for (let [, debt] of debtMap.entries()) {
+            if (!debt.months.length) continue;
+            hasDebt = true;
+            const count       = debt.months.length;
+            const badgeClass  = count >= 3 ? 'badge-red' : count === 2 ? 'badge-orange' : 'badge-yellow';
+            const severityText = count >= 3 ? `🔴 متأخر ${count} شهور` : count === 2 ? '🟠 متأخر شهرين' : '🟡 متأخر شهر';
+
+            html += `<div class="alert-item danger">
+                <strong>${debt.name} (0${debt.phone})</strong>
+                ${severityText} — الأشهر: ${debt.months.join(', ')}<br>
+                <span class="alert-badge ${badgeClass}">المطلوب: ${debt.totalDebt.toFixed(2)} ج</span>
+            </div>`;
+        }
+        if (!hasDebt) html += `<div class="alert-item success">✅ جميع العملاء سدّدوا</div>`;
+        html += '</div>';
+
+        document.getElementById('alertsContainer').innerHTML = html;
+    }
+
+    /* ════════════════ Tabs ════════════════ */
+    function showTab(tabName, el) {
+        ['alerts','all','upload','settings'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = el || document.querySelectorAll('.tab-btn')[['alerts','all','upload','settings'].indexOf(tabName)];
+        if (activeBtn) activeBtn.classList.add('active');
+        if (tabName === 'alerts') generateAlerts();
+        if (tabName === 'all')    loadMonth();
+    }
+
+    /* ════════════════ Misc ════════════════ */
+    function resetAllData() {
+        if (confirm("⚠️ هل أنت متأكد؟ سيتم مسح كل البيانات")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    function showToast(msg, type = 'success') {
+        const t = document.createElement('div');
+        t.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+            background:${type === 'warning' ? '#f0a500' : '#1a9e4a'};color:white;
+            padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;
+            z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);`;
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2800);
+    }
+
+    /* ════════════════ Init ════════════════ */
+    const now = new Date();
+    const ym  = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    document.getElementById('monthPicker').value  = ym;
+    document.getElementById('uploadMonth').value  = ym;
+    loadNames();
+    generateAlerts();
+
+    // Upload file name display
+    document.getElementById('pdfInput').addEventListener('change', function() {
+        const name = this.files[0]?.name || 'أو اسحب الملف هنا';
+        document.getElementById('uploadFileName').textContent = name;
+    });
+</script>
+</body>
+</html>
