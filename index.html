@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>مطابقة فاتورة فودافون</title>
+    <title>نظام إدارة فواتير فودافون - كامل</title>
     <style>
         * {
             box-sizing: border-box;
@@ -15,7 +15,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: auto;
             background: white;
             border-radius: 20px;
@@ -27,12 +27,18 @@
             color: #e60000;
             text-align: center;
         }
+        h2 {
+            font-size: 18px;
+            margin-top: 20px;
+            border-bottom: 2px solid #e60000;
+            padding-bottom: 5px;
+        }
         label {
             font-weight: bold;
             display: block;
             margin-top: 15px;
         }
-        input, textarea, button {
+        input, textarea, button, select {
             width: 100%;
             padding: 12px;
             margin-top: 8px;
@@ -42,8 +48,9 @@
             font-family: inherit;
         }
         textarea {
-            height: 200px;
+            height: 120px;
             direction: ltr;
+            font-size: 12px;
         }
         button {
             background: #e60000;
@@ -51,11 +58,21 @@
             font-weight: bold;
             border: none;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 10px;
             font-size: 16px;
         }
-        button:hover {
-            background: #cc0000;
+        button.secondary {
+            background: #6c757d;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.warning {
+            background: #ffc107;
+            color: #333;
+        }
+        button.danger {
+            background: #dc3545;
         }
         .result {
             margin-top: 20px;
@@ -67,30 +84,115 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 12px;
         }
         th, td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: center;
-            font-size: 13px;
         }
         th {
             background: #e60000;
             color: white;
         }
-        .match {
+        .paid {
             background: #d4edda;
         }
-        .mismatch {
+        .unpaid {
             background: #f8d7da;
         }
-        .note {
-            font-size: 12px;
-            color: gray;
-            margin-top: 10px;
+        .overprice {
+            background: #fff3cd;
+        }
+        .alert-card {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .alert-card.warning {
+            background: #ffc107;
+            color: #333;
+        }
+        .alert-card.info {
+            background: #17a2b8;
+        }
+        .summary {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .month-selector input {
+            flex: 2;
+        }
+        .month-selector button {
+            flex: 1;
+            margin-top: 0;
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .filter-buttons button {
+            flex: 1;
+            margin-top: 0;
+        }
+        .action-btn {
+            padding: 5px 10px;
+            font-size: 11px;
+            margin-top: 0;
+            width: auto;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #e60000;
+            color: white;
+        }
+        .hidden {
+            display: none;
+        }
+        .debt-badge {
+            background: #dc3545;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-size: 10px;
+        }
+        .good-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-size: 10px;
+        }
+        .inline-input {
+            width: 80px;
+            padding: 4px;
+            font-size: 11px;
         }
     </style>
-    <!-- PDF.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -98,62 +200,192 @@
 </head>
 <body>
 <div class="container">
-    <h1>📄 مطابقة فاتورة فودافون</h1>
+    <h1>📊 نظام إدارة فواتير فودافون</h1>
     
-    <label>📎 1. ارفع ملف PDF الخاص بالفاتورة:</label>
-    <input type="file" id="pdfInput" accept=".pdf">
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('alerts')">⚠️ التنبيهات</div>
+        <div class="tab" onclick="showTab('all')">📋 كل الخطوط</div>
+        <div class="tab" onclick="showTab('upload')">📎 رفع فاتورة</div>
+        <div class="tab" onclick="showTab('settings')">⚙️ الإعدادات</div>
+    </div>
     
-    <label>📋 2. جدول الأسماء والأرقام (كل سطر: الاسم, الرقم بدون 0, السعر المستحق)</label>
-    <small>مثال: فتحي صابر1,1009111258,66.07</small>
-    <textarea id="namesData" placeholder="فتحي صابر1,1009111258,66.07
-الليثى,1050465564,153.49
-نادر,1000238985,66.07"></textarea>
+    <!-- تبويب التنبيهات -->
+    <div id="tab-alerts">
+        <div id="alertsContainer"></div>
+    </div>
     
-    <button onclick="processPDF()">🔄 ابدأ المطابقة</button>
+    <!-- تبويب كل الخطوط -->
+    <div id="tab-all" class="hidden">
+        <div class="month-selector">
+            <input type="month" id="monthPicker">
+            <button class="secondary" onclick="loadMonth()">عرض</button>
+        </div>
+        <div class="filter-buttons">
+            <button onclick="filterTable('all')">الكل</button>
+            <button onclick="filterTable('unpaid')">عليهم فلوس</button>
+            <button onclick="filterTable('paid')">خلصوا</button>
+            <button onclick="filterTable('overprice')">فاتورة أعلى</button>
+        </div>
+        <div id="allTableContainer"></div>
+        <div id="summaryContainer" class="summary"></div>
+    </div>
     
-    <div id="resultArea" class="result" style="display:none;">
-        <h3>📊 نتيجة المطابقة</h3>
-        <div id="tableContainer"></div>
-        <div class="note">✅ متطابق السعر | ❌ السعر مختلف أو الرقم غير موجود</div>
+    <!-- تبويب رفع فاتورة -->
+    <div id="tab-upload" class="hidden">
+        <label>📅 الشهر:</label>
+        <input type="month" id="uploadMonth">
+        
+        <label>📎 رفع ملف PDF الفاتورة:</label>
+        <input type="file" id="pdfInput" accept=".pdf">
+        
+        <button onclick="uploadAndProcess()">🔄 معالجة الفاتورة وحفظها</button>
+        
+        <div id="uploadResult"></div>
+    </div>
+    
+    <!-- تبويب الإعدادات -->
+    <div id="tab-settings" class="hidden">
+        <h2>📞 الأسماء والأسعار</h2>
+        <textarea id="namesData" placeholder="الاسم,الرقم بدون 0,السعر_اللي_بتحاسب_بيه,نوع_الباقة
+مثال:
+فتحي صابر1,1009111258,70,FlexRevamp
+الليثى,1050465564,160,BusinessFlex"></textarea>
+        <button class="success" onclick="saveNames()">💾 حفظ الأسماء</button>
+        
+        <div class="add-new">
+            <h3>➕ إضافة رقم جديد</h3>
+            <input type="text" id="newName" placeholder="الاسم">
+            <input type="text" id="newPhone" placeholder="الرقم (بدون 0)">
+            <input type="number" id="newPrice" placeholder="السعر اللي بتحاسب بيه">
+            <input type="text" id="newPackage" placeholder="نوع الباقة">
+            <button class="success" onclick="addNewNumber()">➕ إضافة</button>
+        </div>
+        
+        <button class="danger" onclick="resetAllData()" style="margin-top:20px;">🗑️ مسح كل البيانات</button>
     </div>
 </div>
 
 <script>
-    async function processPDF() {
-        const fileInput = document.getElementById('pdfInput');
-        const namesText = document.getElementById('namesData').value;
-        
-        if (!fileInput.files.length) {
-            alert("يرجى رفع ملف PDF أولاً");
-            return;
+    // المفتاح للتخزين
+    const STORAGE_NAMES = "vodafone_names";
+    const STORAGE_MONTHS = "vodafone_months";
+    
+    let currentMonthData = [];
+    let currentFilter = "all";
+    let namesMap = new Map();
+    
+    // تحميل الأسماء المحفوظة
+    function loadNames() {
+        const saved = localStorage.getItem(STORAGE_NAMES);
+        if (saved) {
+            const names = JSON.parse(saved);
+            namesMap.clear();
+            names.forEach(n => {
+                namesMap.set(n.phone, { name: n.name, myPrice: n.myPrice, packageType: n.packageType });
+            });
+            document.getElementById('namesData').value = names.map(n => `${n.name},${n.phone},${n.myPrice},${n.packageType}`).join('\n');
+        } else {
+            // بيانات افتراضية من الفاتورة السابقة
+            const defaultNames = [
+                ["فتحي صابر1","1009111258",66.07,"FlexRevamp"],
+                ["الليثى","1050465564",153.49,"BusinessFlex"],
+                ["نادر","1000238985",66.07,"FlexRevamp"],
+                ["ايمن جمال","1050558655",112.86,"FlexRevamp"],
+                ["محمد مامون ابوزيد","1010739900",154.72,"FlexRevamp"],
+                ["عبدالرحمن عصام عبدالصادق","1018388851",185.50,"BusinessFlex+"]
+            ];
+            defaultNames.forEach(n => {
+                namesMap.set(n[1], { name: n[0], myPrice: n[2], packageType: n[3] });
+            });
+            saveNamesToStorage();
         }
-        if (!namesText.trim()) {
-            alert("يرجى إدخال جدول الأسماء والأرقام");
-            return;
+    }
+    
+    function saveNamesToStorage() {
+        const arr = [];
+        for (let [phone, data] of namesMap.entries()) {
+            arr.push({ phone, name: data.name, myPrice: data.myPrice, packageType: data.packageType });
         }
-        
-        // قراءة جدول الأسماء
-        const lines = namesText.trim().split('\n');
-        const nameMap = new Map(); // مفتاح = الرقم (بدون 0), قيمة = {name, expectedPrice}
-        
+        localStorage.setItem(STORAGE_NAMES, JSON.stringify(arr));
+    }
+    
+    function saveNames() {
+        const text = document.getElementById('namesData').value;
+        const lines = text.trim().split('\n');
+        namesMap.clear();
         for (let line of lines) {
-            let parts = line.split(',').map(s => s.trim());
-            if (parts.length >= 3) {
-                let name = parts[0];
-                let phone = parts[1].replace(/^0+/, ''); // إزالة الصفر من البداية
-                let price = parseFloat(parts[2]);
-                if (!isNaN(price)) {
-                    nameMap.set(phone, { name, expectedPrice: price });
-                }
+            const parts = line.split(',').map(s => s.trim());
+            if (parts.length >= 4) {
+                const phone = parts[1].replace(/^0+/, '');
+                namesMap.set(phone, {
+                    name: parts[0],
+                    myPrice: parseFloat(parts[2]),
+                    packageType: parts[3]
+                });
             }
         }
+        saveNamesToStorage();
+        alert("تم حفظ الأسماء بنجاح!");
+        if (currentMonthData.length) loadMonth();
+    }
+    
+    function addNewNumber() {
+        const name = document.getElementById('newName').value;
+        const phone = document.getElementById('newPhone').value.replace(/^0+/, '');
+        const price = parseFloat(document.getElementById('newPrice').value);
+        const packageType = document.getElementById('newPackage').value;
         
-        if (nameMap.size === 0) {
-            alert("لم يتم العثور على بيانات صحيحة في جدول الأسماء");
+        if (!name || !phone || isNaN(price) || !packageType) {
+            alert("يرجى ملء جميع الحقول");
             return;
         }
         
-        // قراءة ملف PDF
+        namesMap.set(phone, { name, myPrice: price, packageType });
+        saveNamesToStorage();
+        
+        // تفريغ الحقول
+        document.getElementById('newName').value = '';
+        document.getElementById('newPhone').value = '';
+        document.getElementById('newPrice').value = '';
+        document.getElementById('newPackage').value = '';
+        
+        // تحديث واجهة الأسماء
+        const arr = [];
+        for (let [p, d] of namesMap.entries()) {
+            arr.push(`${d.name},${p},${d.myPrice},${d.packageType}`);
+        }
+        document.getElementById('namesData').value = arr.join('\n');
+        
+        alert(`تم إضافة ${name} بنجاح!`);
+        if (currentMonthData.length) loadMonth();
+    }
+    
+    // حفظ بيانات شهر
+    function saveMonthData(month, data) {
+        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
+        allMonths[month] = data;
+        localStorage.setItem(STORAGE_MONTHS, JSON.stringify(allMonths));
+    }
+    
+    function loadMonthData(month) {
+        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
+        return allMonths[month] || [];
+    }
+    
+    async function uploadAndProcess() {
+        const fileInput = document.getElementById('pdfInput');
+        const month = document.getElementById('uploadMonth').value;
+        
+        if (!fileInput.files.length) {
+            alert("يرجى رفع ملف PDF");
+            return;
+        }
+        if (!month) {
+            alert("يرجى اختيار الشهر");
+            return;
+        }
+        
         const file = fileInput.files[0];
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -162,38 +394,26 @@
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join(' ');
-            fullText += pageText + ' ';
+            fullText += textContent.items.map(item => item.str).join(' ') + ' ';
         }
         
-        // استخراج الأرقام من النص (أرقام مكونة من 10 أرقام تبدأ بـ 1)
-        const phoneRegex = /\b(1[0-9]{9})\b/g;
-        let matches = [...fullText.matchAll(phoneRegex)];
-        
-        // محاولة استخراج الأسعار القريبة من الأرقام
-        // طريقة مبسطة: نفترض أن كل رقم يتبعه سعر في الفاتورة
-        // سنبحث عن أرقام نبدأ من 10 أو 11 ثم نلتقط أي رقم عشري قريب
-        const extracted = [];
+        // استخراج الأرقام والأسعار
         const linesSplit = fullText.split(/\s+/);
+        const extracted = [];
         for (let idx = 0; idx < linesSplit.length; idx++) {
             let token = linesSplit[idx];
             if (/^1[0-9]{9}$/.test(token)) {
-                let price = null;
-                // نبحث عن سعر قريب (رقم عشري أو عدد صحيح)
                 for (let offset = 1; offset <= 5; offset++) {
                     let nextToken = linesSplit[idx + offset];
                     if (nextToken && /^[0-9]+(\.[0-9]+)?$/.test(nextToken)) {
-                        price = parseFloat(nextToken);
+                        extracted.push({ phone: token, invoicePrice: parseFloat(nextToken) });
                         break;
                     }
-                }
-                if (price !== null && !isNaN(price)) {
-                    extracted.push({ phone: token, invoicePrice: price });
                 }
             }
         }
         
-        // دمج النتائج وإزالة التكرارات
+        // إزالة التكرارات
         const uniqueMap = new Map();
         for (let item of extracted) {
             if (!uniqueMap.has(item.phone)) {
@@ -201,61 +421,160 @@
             }
         }
         
-        // إعداد الجدول النهائي
-        const results = [];
+        // تجميع النتائج
+        const monthData = [];
         for (let [phone, invoicePrice] of uniqueMap.entries()) {
-            const contact = nameMap.get(phone);
+            const contact = namesMap.get(phone);
             if (contact) {
-                const match = (Math.abs(contact.expectedPrice - invoicePrice) < 0.01);
-                results.push({
-                    name: contact.name,
+                monthData.push({
                     phone: phone,
-                    expected: contact.expectedPrice,
-                    invoice: invoicePrice,
-                    match: match
+                    name: contact.name,
+                    myPrice: contact.myPrice,
+                    invoicePrice: invoicePrice,
+                    packageType: contact.packageType,
+                    paid: false
                 });
             } else {
-                results.push({
-                    name: "⚠️ غير موجود",
+                monthData.push({
                     phone: phone,
-                    expected: "—",
-                    invoice: invoicePrice,
-                    match: false
+                    name: "⚠️ بدون اسم",
+                    myPrice: 0,
+                    invoicePrice: invoicePrice,
+                    packageType: "غير معروف",
+                    paid: false
                 });
             }
         }
         
-        // عرض النتائج
-        displayResults(results);
+        saveMonthData(month, monthData);
+        document.getElementById('uploadResult').innerHTML = `<div class="alert-card info">✅ تم حفظ فاتورة شهر ${month} بنجاح! (${monthData.length} رقم)</div>`;
+        
+        // تحديث التنبيهات
+        showTab('alerts');
     }
     
-    function displayResults(results) {
-        const container = document.getElementById('tableContainer');
-        const resultDiv = document.getElementById('resultArea');
+    function loadMonth() {
+        const month = document.getElementById('monthPicker').value;
+        if (!month) return;
         
-        if (results.length === 0) {
-            container.innerHTML = "<p>❌ لم يتم العثور على أي أرقام مطابقة في الفاتورة. تأكد من صيغة ملف PDF.</p>";
-            resultDiv.style.display = 'block';
+        currentMonthData = loadMonthData(month);
+        displayAllTable(currentMonthData);
+        updateSummary(currentMonthData);
+    }
+    
+    function displayAllTable(data) {
+        let filtered = [...data];
+        if (currentFilter === 'paid') filtered = data.filter(d => d.paid === true);
+        if (currentFilter === 'unpaid') filtered = data.filter(d => d.paid !== true);
+        if (currentFilter === 'overprice') filtered = data.filter(d => d.invoicePrice > d.myPrice);
+        
+        if (filtered.length === 0) {
+            document.getElementById('allTableContainer').innerHTML = "<p>لا توجد بيانات</p>";
             return;
         }
         
-        let html = '<table><tr><th>الاسم</th><th>الرقم</th><th>المستحق (ثبتك)</th><th>الفاتورة</th><th>الحالة</th></tr>';
+        let html = '<table><tr><th>الاسم</th><th>الرقم</th><th>نوع الباقة</th><th>سعرك</th><th>سعر الفاتورة</th><th>الفرق</th><th>الحالة</th><th></th></tr>';
         
-        for (let r of results) {
-            let statusClass = r.match ? 'match' : 'mismatch';
-            let statusIcon = r.match ? '✅' : '❌';
-            html += `<tr class="${statusClass}">
-                        <td>${r.name}</td>
-                        <td>0${r.phone}</td>
-                        <td>${r.expected}</td>
-                        <td>${r.invoice}</td>
-                        <td>${statusIcon}</td>
-                     </tr>`;
+        for (let d of filtered) {
+            const diff = d.myPrice - d.invoicePrice;
+            const diffClass = diff >= 0 ? 'profit-positive' : 'profit-negative';
+            const statusClass = d.paid ? 'paid' : 'unpaid';
+            const overpriceClass = d.invoicePrice > d.myPrice ? 'overprice' : '';
+            
+            html += `<tr class="${statusClass} ${overpriceClass}">
+                        <td>${d.name}</td>
+                        <td>0${d.phone}</td>
+                        <td>${d.packageType}</td>
+                        <td>${d.myPrice.toFixed(2)}</td>
+                        <td>${d.invoicePrice.toFixed(2)}</td>
+                        <td class="${diffClass}">${diff.toFixed(2)}</td>
+                        <td>${d.paid ? '✅ دفع' : '❌ عليه'}</td>
+                        <td><button class="action-btn ${d.paid ? '' : 'pay'}" onclick="togglePaid('${d.phone}')">${d.paid ? '🗑️ إلغاء' : '💰 دفع'}</button></td>
+                      </tr>`;
         }
         html += '</table>';
-        container.innerHTML = html;
-        resultDiv.style.display = 'block';
+        document.getElementById('allTableContainer').innerHTML = html;
     }
-</script>
-</body>
-</html>
+    
+    function updateSummary(data) {
+        const totalMyPrice = data.reduce((s, d) => s + d.myPrice, 0);
+        const totalInvoice = data.reduce((s, d) => s + d.invoicePrice, 0);
+        const totalPaid = data.filter(d => d.paid).reduce((s, d) => s + d.myPrice, 0);
+        const totalUnpaid = totalMyPrice - totalPaid;
+        const profit = totalMyPrice - totalInvoice;
+        
+        document.getElementById('summaryContainer').innerHTML = `
+            <h3>📈 ملخص الشهر</h3>
+            <p>💰 إجمالي المطلوب لشركة فودافون: ${totalInvoice.toFixed(2)} ج</p>
+            <p>💵 إجمالي اللي هتتحصله: ${totalMyPrice.toFixed(2)} ج</p>
+            <p>📦 أرباحك المتوقعة: ${profit.toFixed(2)} ج</p>
+            <p>✅ تم تحصيل: ${totalPaid.toFixed(2)} ج</p>
+            <p>❌ متبقي عليهم: ${totalUnpaid.toFixed(2)} ج</p>
+        `;
+    }
+    
+    function togglePaid(phone) {
+        const month = document.getElementById('monthPicker').value;
+        const data = loadMonthData(month);
+        const index = data.findIndex(d => d.phone === phone);
+        if (index !== -1) {
+            data[index].paid = !data[index].paid;
+            saveMonthData(month, data);
+            loadMonth();
+            showTab('alerts');
+        }
+    }
+    
+    function filterTable(type) {
+        currentFilter = type;
+        loadMonth();
+    }
+    
+    function showTab(tabName) {
+        document.getElementById('tab-alerts').classList.add('hidden');
+        document.getElementById('tab-all').classList.add('hidden');
+        document.getElementById('tab-upload').classList.add('hidden');
+        document.getElementById('tab-settings').classList.add('hidden');
+        
+        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        if (tabName === 'alerts') generateAlerts();
+        if (tabName === 'all') loadMonth();
+    }
+    
+    function generateAlerts() {
+        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
+        const months = Object.keys(allMonths).sort().reverse();
+        
+        let alertsHtml = '';
+        
+        // تجميع المديونيات لكل رقم
+        const debtMap = new Map();
+        
+        for (let month of months) {
+            const data = allMonths[month];
+            for (let d of data) {
+                if (!d.paid && d.myPrice > 0) {
+                    if (!debtMap.has(d.phone)) {
+                        debtMap.set(d.phone, { name: d.name, phone: d.phone, months: [], totalDebt: 0 });
+                    }
+                    const entry = debtMap.get(d.phone);
+                    entry.months.push(month);
+                    entry.totalDebt += d.myPrice;
+                }
+            }
+        }
+        
+        // تنبيه: فاتورة أعلى من السعر
+        alertsHtml += '<h2>⚠️ فواتير أعلى من السعر المتفق عليه</h2>';
+        let hasOverprice = false;
+        for (let month of months) {
+            const data = allMonths[month];
+            for (let d of data) {
+                if (d.invoicePrice > d.myPrice) {
+                    hasOverprice = true;
+                    alertsHtml += `<div class="alert-card warning">
+      
