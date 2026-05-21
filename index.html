@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>مطابقة فاتورة فودافون</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 22px;
+            color: #e60000;
+            text-align: center;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        textarea {
+            height: 200px;
+            direction: ltr;
+        }
+        button {
+            background: #e60000;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #cc0000;
+        }
+        .result {
+            margin-top: 20px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 13px;
+        }
+        th {
+            background: #e60000;
+            color: white;
+        }
+        .match {
+            background: #d4edda;
+        }
+        .mismatch {
+            background: #f8d7da;
+        }
+        .note {
+            font-size: 12px;
+            color: gray;
+            margin-top: 10px;
+        }
+    </style>
+    <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+</head>
+<body>
+<div class="container">
+    <h1>📄 مطابقة فاتورة فودافون</h1>
+    
+    <label>📎 1. ارفع ملف PDF الخاص بالفاتورة:</label>
+    <input type="file" id="pdfInput" accept=".pdf">
+    
+    <label>📋 2. جدول الأسماء والأرقام (كل سطر: الاسم, الرقم بدون 0, السعر المستحق)</label>
+    <small>مثال: فتحي صابر1,1009111258,66.07</small>
+    <textarea id="namesData" placeholder="فتحي صابر1,1009111258,66.07
+الليثى,1050465564,153.49
+نادر,1000238985,66.07"></textarea>
+    
+    <button onclick="processPDF()">🔄 ابدأ المطابقة</button>
+    
+    <div id="resultArea" class="result" style="display:none;">
+        <h3>📊 نتيجة المطابقة</h3>
+        <div id="tableContainer"></div>
+        <div class="note">✅ متطابق السعر | ❌ السعر مختلف أو الرقم غير موجود</div>
+    </div>
+</div>
+
+<script>
+    async function processPDF() {
+        const fileInput = document.getElementById('pdfInput');
+        const namesText = document.getElementById('namesData').value;
+        
+        if (!fileInput.files.length) {
+            alert("يرجى رفع ملف PDF أولاً");
+            return;
+        }
+        if (!namesText.trim()) {
+            alert("يرجى إدخال جدول الأسماء والأرقام");
+            return;
+        }
+        
+        // قراءة جدول الأسماء
+        const lines = namesText.trim().split('\n');
+        const nameMap = new Map(); // مفتاح = الرقم (بدون 0), قيمة = {name, expectedPrice}
+        
+        for (let line of lines) {
+            let parts = line.split(',').map(s => s.trim());
+            if (parts.length >= 3) {
+                let name = parts[0];
+                let phone = parts[1].replace(/^0+/, ''); // إزالة الصفر من البداية
+                let price = parseFloat(parts[2]);
+                if (!isNaN(price)) {
+                    nameMap.set(phone, { name, expectedPrice: price });
+                }
+            }
+        }
+        
+        if (nameMap.size === 0) {
+            alert("لم يتم العثور على بيانات صحيحة في جدول الأسماء");
+            return;
+        }
+        
+        // قراءة ملف PDF
+        const file = fileInput.files[0];
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + ' ';
+        }
+        
+        // استخراج الأرقام من النص (أرقام مكونة من 10 أرقام تبدأ بـ 1)
+        const phoneRegex = /\b(1[0-9]{9})\b/g;
+        let matches = [...fullText.matchAll(phoneRegex)];
+        
+        // محاولة استخراج الأسعار القريبة من الأرقام
+        // طريقة مبسطة: نفترض أن كل رقم يتبعه سعر في الفاتورة
+        // سنبحث عن أرقام نبدأ من 10 أو 11 ثم نلتقط أي رقم عشري قريب
+        const extracted = [];
+        const linesSplit = fullText.split(/\s+/);
+        for (let idx = 0; idx < linesSplit.length; idx++) {
+            let token = linesSplit[idx];
+            if (/^1[0-9]{9}$/.test(token)) {
+                let price = null;
+                // نبحث عن سعر قريب (رقم عشري أو عدد صحيح)
+                for (let offset = 1; offset <= 5; offset++) {
+                    let nextToken = linesSplit[idx + offset];
+                    if (nextToken && /^[0-9]+(\.[0-9]+)?$/.test(nextToken)) {
+                        price = parseFloat(nextToken);
+                        break;
+                    }
+                }
+                if (price !== null && !isNaN(price)) {
+                    extracted.push({ phone: token, invoicePrice: price });
+                }
+            }
+        }
+        
+        // دمج النتائج وإزالة التكرارات
+        const uniqueMap = new Map();
+        for (let item of extracted) {
+            if (!uniqueMap.has(item.phone)) {
+                uniqueMap.set(item.phone, item.invoicePrice);
+            }
+        }
+        
+        // إعداد الجدول النهائي
+        const results = [];
+        for (let [phone, invoicePrice] of uniqueMap.entries()) {
+            const contact = nameMap.get(phone);
+            if (contact) {
+                const match = (Math.abs(contact.expectedPrice - invoicePrice) < 0.01);
+                results.push({
+                    name: contact.name,
+                    phone: phone,
+                    expected: contact.expectedPrice,
+                    invoice: invoicePrice,
+                    match: match
+                });
+            } else {
+                results.push({
+                    name: "⚠️ غير موجود",
+                    phone: phone,
+                    expected: "—",
+                    invoice: invoicePrice,
+                    match: false
+                });
+            }
+        }
+        
+        // عرض النتائج
+        displayResults(results);
+    }
+    
+    function displayResults(results) {
+        const container = document.getElementById('tableContainer');
+        const resultDiv = document.getElementById('resultArea');
+        
+        if (results.length === 0) {
+            container.innerHTML = "<p>❌ لم يتم العثور على أي أرقام مطابقة في الفاتورة. تأكد من صيغة ملف PDF.</p>";
+            resultDiv.style.display = 'block';
+            return;
+        }
+        
+        let html = '<table><tr><th>الاسم</th><th>الرقم</th><th>المستحق (ثبتك)</th><th>الفاتورة</th><th>الحالة</th></tr>';
+        
+        for (let r of results) {
+            let statusClass = r.match ? 'match' : 'mismatch';
+            let statusIcon = r.match ? '✅' : '❌';
+            html += `<tr class="${statusClass}">
+                        <td>${r.name}</td>
+                        <td>0${r.phone}</td>
+                        <td>${r.expected}</td>
+                        <td>${r.invoice}</td>
+                        <td>${statusIcon}</td>
+                     </tr>`;
+        }
+        html += '</table>';
+        container.innerHTML = html;
+        resultDiv.style.display = 'block';
+    }
+</script>
+</body>
+</html>
