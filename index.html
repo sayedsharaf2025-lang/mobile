@@ -990,23 +990,37 @@ async function processInvoice(){
         else if(/^01[0-9]{9}$/.test(tok)) ph=tok.slice(1);
         if(!ph||found.has(ph)) continue;
 
-        // Search for invoice amount in tokens AFTER the phone on the same line,
-        // then in the next 3 lines
+        // الفاتورة جدول: رقم الخط في السطر وآخر رقم في نفس السطر هو المبلغ الإجمالي
         let inv=0;
-        const searchLines=[lineStrs[li],...(lineStrs.slice(li+1,li+4))];
-        outer:for(let sl=0;sl<searchLines.length;sl++){
-          const tokens=searchLines[sl].split(/\s+/);
-          // On first line, start after phone number position
-          const startIdx=sl===0?lineTokens.indexOf(tok)+1:0;
-          for(let k=startIdx;k<tokens.length;k++){
-            const v=parseFloat(tokens[k].replace(',','.'));
-            if(!isNaN(v)&&v>=5&&v<=3000&&/^[0-9]+([.,][0-9]{1,2})?$/.test(tokens[k])){
-              // Make sure this number doesn't look like another phone number
-              if(tokens[k].length>=9) continue;
-              inv=v; break outer;
-            }
+
+        // أولاً: دوّر على آخر رقم مالي في نفس السطر بعد رقم الموبايل
+        const afterPhone=lineTokens.slice(lineTokens.indexOf(tok)+1);
+        let lastOnLine=0;
+        afterPhone.forEach(t=>{
+          const v=parseFloat(t.replace(',','.'));
+          if(!isNaN(v)&&v>=5&&v<=3000&&t.length<=8&&/^[0-9]+([.,][0-9]{1,2})?$/.test(t)){
+            lastOnLine=v; // بياخد آخر واحد يلاقيه
+          }
+        });
+
+        if(lastOnLine>0){
+          inv=lastOnLine;
+        } else {
+          // لو السطر ماعندوش أرقام، دوّر في السطر اللي بعده
+          for(let sl=1;sl<=3;sl++){
+            if(li+sl>=lineStrs.length) break;
+            const nextTokens=lineStrs[li+sl].split(/\s+/);
+            let lastNext=0;
+            nextTokens.forEach(t=>{
+              const v=parseFloat(t.replace(',','.'));
+              if(!isNaN(v)&&v>=5&&v<=3000&&t.length<=8&&/^[0-9]+([.,][0-9]{1,2})?$/.test(t)){
+                lastNext=v;
+              }
+            });
+            if(lastNext>0){inv=lastNext;break;}
           }
         }
+
         found.set(ph,inv);
       }
     }
