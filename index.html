@@ -2,323 +2,346 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام فودافون السحابي المتكامل</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام فودافون المتكامل</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --red: #e60000; --green: #1a9e4a; --blue: #0077cc; --yellow: #f0a500;
-            --gray: #f5f6f8; --text: #1a1d23; --white: #ffffff; --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --gray: #f5f6f8; --text: #1a1d23; --white: #ffffff; --shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #f0f2f5; color: var(--text); padding-bottom: 60px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; color: var(--text); padding-bottom: 70px; }
 
         /* Navigation */
-        .header { background: var(--red); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .header { background: var(--red); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; }
         .tab-bar { display: flex; background: white; border-bottom: 1px solid #ddd; position: sticky; top: 52px; z-index: 99; overflow-x: auto; }
-        .tab-btn { flex: 1; min-width: 80px; padding: 12px 5px; font-size: 11px; font-weight: 700; border: none; background: none; border-bottom: 3px solid transparent; cursor: pointer; color: #666; transition: 0.3s; }
+        .tab-btn { flex: 1; min-width: 90px; padding: 15px 5px; font-size: 12px; font-weight: 700; border: none; background: none; border-bottom: 3px solid transparent; cursor: pointer; color: #666; }
         .tab-btn.active { color: var(--red); border-bottom-color: var(--red); background: #fff5f5; }
 
-        .container { padding: 15px; max-width: 1000px; margin: auto; }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: var(--shadow); }
-        .card-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; border-right: 4px solid var(--red); padding-right: 10px; display: flex; justify-content: space-between; }
+        .container { padding: 15px; max-width: 1100px; margin: auto; }
+        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); border-right: 5px solid var(--red); }
+        .card-title { font-size: 16px; font-weight: 800; margin-bottom: 15px; color: var(--red); display: flex; justify-content: space-between; }
 
-        /* Tables & UI */
+        /* Tables */
         .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; font-size: 13px; }
-        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
-        th { background: var(--gray); font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; font-size: 14px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+        th { background: var(--gray); color: #333; }
+        tr:hover { background: #fafafa; }
         
-        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-        .paid { background: #e6ffed; color: #1a9e4a; }
-        .unpaid { background: #fff2f2; color: #e60000; }
-        .partial { background: #fff9e6; color: #b08000; }
-
-        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        /* Inputs & Buttons */
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-red { background: var(--red); color: white; }
         .btn-green { background: var(--green); color: white; }
         .btn-blue { background: var(--blue); color: white; }
         
-        .upload-box { border: 2px dashed #ccc; padding: 25px; text-align: center; border-radius: 12px; cursor: pointer; background: #fafafa; }
+        .upload-zone { border: 2px dashed #ccc; padding: 30px; text-align: center; border-radius: 12px; background: #fdfdfd; cursor: pointer; margin-bottom: 15px; }
         .hidden { display: none !important; }
 
-        /* Stats Grid */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .stat-card { background: white; padding: 15px; border-radius: 10px; text-align: center; box-shadow: var(--shadow); border-top: 4px solid var(--red); }
-        .stat-card h4 { font-size: 11px; color: #666; margin-bottom: 5px; }
-        .stat-card p { font-size: 18px; font-weight: 800; color: var(--text); }
+        /* Badges */
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .badge-red { background: #ffebeb; color: #e60000; }
+        .badge-green { background: #ebffef; color: #1a9e4a; }
+
+        .profit-box { background: #e7f3ff; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body>
 
-<div class="header">
-    <h2>نظام إدارة فودافون برو 2026</h2>
-</div>
+<div class="header"><h2>نظام فودافون السحابي المطور 2026</h2></div>
 
 <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('alerts', this)">⚠️ التنبيهات</button>
     <button class="tab-btn" onclick="switchTab('lines', this)">📋 الخطوط</button>
     <button class="tab-btn" onclick="switchTab('reports', this)">📈 التقارير</button>
-    <button class="tab-btn" onclick="switchTab('upload', this)">📄 رفع الفاتورة</button>
-    <button class="tab-btn" onclick="switchTab('store', this)">⚙️ الإعدادات</button>
+    <button class="tab-btn" onclick="switchTab('bills', this)">📄 رفع الفاتورة</button>
+    <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ الإعدادات</button>
 </div>
 
 <div class="container">
     
     <div id="tab-alerts">
+        <div class="profit-box">
+            <span>💰 إجمالي أرباح الشهر المتوقعة:</span>
+            <b id="totalProfitValue" style="font-size: 20px; color: var(--blue);">0 ج.م</b>
+        </div>
         <div class="card">
-            <div class="card-title">🚨 متأخرات التحصيل (من جميع الشهور)</div>
-            <div id="alertsList">جاري الفحص...</div>
+            <div class="card-title">🚨 متأخرات وتنبيهات</div>
+            <div id="alertsList"></div>
         </div>
     </div>
 
     <div id="tab-lines" class="hidden">
         <div class="card">
-            <div style="display:flex; gap:10px;">
-                <input type="month" id="viewMonth" style="margin:0">
-                <button class="btn-blue" onclick="loadMonthLines()">عرض</button>
-            </div>
-        </div>
-        <div id="monthLinesOutput"></div>
-    </div>
-
-    <div id="tab-reports" class="hidden">
-        <div class="stats-grid" id="reportStats"></div>
-        <div class="card">
-            <div class="card-title">📊 تحليل الأرباح الشهرية</div>
+            <div class="card-title">عرض تحصيل شهر <input type="month" id="viewMonth" style="width: auto; margin:0;" onchange="loadMonthLines()"></div>
             <div class="table-wrap">
-                <table id="reportsTable">
+                <table>
                     <thead>
                         <tr>
-                            <th>الشهر</th>
-                            <th>تكلفة الفاتورة</th>
-                            <th>مبلغ التحصيل</th>
-                            <th>صافي الربح</th>
+                            <th>الاسم</th><th>الرقم</th><th>خطة الأسعار</th><th>سعر الفاتورة</th><th>سعرك (ربح 45%)</th><th>المدفوع</th><th>الحالة</th><th>إجراء</th>
                         </tr>
                     </thead>
-                    <tbody id="reportsBody"></tbody>
+                    <tbody id="linesBody"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="tab-upload" class="hidden">
+    <div id="tab-reports" class="hidden">
         <div class="card">
-            <div class="card-title">رفع فاتورة الشهر (استخراج المبالغ)</div>
-            <input type="month" id="uploadBillMonth">
-            <div class="upload-box" onclick="document.getElementById('billPdf').click()">
-                <input type="file" id="billPdf" accept=".pdf" hidden onchange="updateFileName(this, 'billFileName')">
-                <span id="billFileName">📄 اختر ملف الفاتورة لاستخراج الأسعار</span>
-            </div>
-            <button class="btn-red" style="width:100%; margin-top:15px;" onclick="processBillPDF()">🚀 استخراج وحفظ مبالغ الشهر</button>
+            <div class="card-title">📊 تقرير الأداء الشهري</div>
+            <div id="reportsContainer"></div>
         </div>
     </div>
 
-    <div id="tab-store" class="hidden">
+    <div id="tab-bills" class="hidden">
         <div class="card">
-            <div class="card-title">تحديث المخزن (الرقم والخطة فقط)</div>
-            <div class="upload-box" onclick="document.getElementById('storePdf').click()">
-                <input type="file" id="storePdf" accept=".pdf" hidden onchange="updateFileName(this, 'storeFileName')">
-                <span id="storeFileName">🔄 رفع ملف لتحديث الأرقام والباقات</span>
+            <div class="card-title">📄 رفع فاتورة PDF الشهرية</div>
+            <label>اختر شهر الفاتورة:</label>
+            <input type="month" id="billMonth">
+            <div class="upload-zone" onclick="document.getElementById('pdfInput').click()">
+                <input type="file" id="pdfInput" accept=".pdf" hidden onchange="processPDF(this)">
+                <b>اضغط لرفع ملف الـ PDF</b>
+                <p id="pdfName" style="color: #666; margin-top:10px;">سيتم استخراج المبالغ وربطها بالمخزن تلقائياً</p>
             </div>
-            <button class="btn-blue" style="width:100%; margin-top:10px;" onclick="processStorePDF()">تحديث قاعدة البيانات</button>
         </div>
+    </div>
 
+    <div id="tab-settings" class="hidden">
         <div class="card">
-            <div class="card-title">🗄️ إدارة المخزن (الأسماء وسعرك الثابت)</div>
+            <div class="card-title">📥 استيراد بيانات المخزن (Excel)</div>
+            <div class="upload-zone" onclick="document.getElementById('excelInput').click()">
+                <input type="file" id="excelInput" accept=".xlsx, .xls" hidden onchange="processExcel(this)">
+                <b>اضغط لرفع ملف Excel (الاسم، الرقم، الخطة)</b>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">🗄️ إدارة المخزن الثابت</div>
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>الاسم</th><th>الرقم</th><th>الباقة</th><th>سعرك</th><th>إجراء</th></tr>
+                        <tr><th>الاسم</th><th>الرقم</th><th>الخطة</th><th>حذف</th></tr>
                     </thead>
                     <tbody id="storeBody"></tbody>
                 </table>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:15px;">
-                <input type="text" id="addName" placeholder="الاسم الجديد">
-                <input type="text" id="addPhone" placeholder="رقم الخط">
-                <input type="text" id="addPkg" placeholder="خطة الأسعار">
-                <input type="number" id="addPrice" placeholder="سعرك للعميل">
-            </div>
-            <button class="btn-green" style="width:100%" onclick="addToStoreManual()">➕ إضافة للمخزن</button>
         </div>
     </div>
 
 </div>
 
+<div id="partialModal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:white; padding:20px; border-radius:15px; width:90%; max-width:400px;">
+        <h3>تسجيل دفع جزء</h3>
+        <input type="number" id="partialAmount" placeholder="المبلغ المدفوع">
+        <button class="btn-green" style="width:100%" onclick="savePartial()">تأكيد الحفظ</button>
+        <button class="btn-red" style="width:100%; margin-top:10px;" onclick="closeModal()">إلغاء</button>
+    </div>
+</div>
+
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    const DB_URL = "https://mobile-invoic-default-rtdb.firebaseio.com/";
-    let store = {};
-    let monthsData = {};
+    
+    // البيانات (تخزن في LocalStorage لمحاكاة السحابي)
+    let store = JSON.parse(localStorage.getItem('store')) || {};
+    let monthsData = JSON.parse(localStorage.getItem('monthsData')) || {};
+    let currentEdit = { month: '', phone: '' };
 
-    async function api(path, method='GET', data=null) {
-        const opt = { method, headers:{'Content-Type':'application/json'}};
-        if(data) opt.body = JSON.stringify(data);
-        const res = await fetch(`${DB_URL}${path}.json`, opt);
-        return res.json();
-    }
-
-    async function init() {
-        store = await api('store') || {};
-        monthsData = await api('months') || {};
-        const ym = new Date().toISOString().slice(0, 7);
-        document.getElementById('viewMonth').value = ym;
-        document.getElementById('uploadBillMonth').value = ym;
-        renderStore();
-        generateAlerts();
-    }
-
+    // تبديل الشاشات
     function switchTab(tab, btn) {
         document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
         document.getElementById(`tab-${tab}`).classList.remove('hidden');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        if(tab === 'settings') renderStore();
+        if(tab === 'alerts') renderAlerts();
         if(tab === 'reports') renderReports();
-        if(tab === 'alerts') generateAlerts();
     }
 
-    function updateFileName(inp, id) { document.getElementById(id).innerText = inp.files[0].name; }
-
-    // --- معالجة PDF ---
-    async function extractPDFText(file) {
-        const buffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({data: buffer}).promise;
-        let text = "";
-        for(let i=1; i<=pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            text += content.items.map(it => it.str).join(" ") + " ";
-        }
-        return text;
+    // --- معالجة ملف Excel ---
+    function processExcel(input) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            
+            json.forEach(row => {
+                const phone = String(row['الرقم'] || row['phone']).replace(/^0+/, '');
+                store[phone] = {
+                    name: row['الاسم'] || row['name'] || "بدون اسم",
+                    plan: row['الخطة'] || row['plan'] || "غير محدد"
+                };
+            });
+            saveData();
+            renderStore();
+            alert("تم استيراد بيانات المخزن بنجاح!");
+        };
+        reader.readAsArrayBuffer(file);
     }
 
-    async function processStorePDF() {
-        const text = await extractPDFText(document.getElementById('storePdf').files[0]);
-        const phones = text.match(/1[0-9]{9}/g) || [];
-        for(let ph of phones) {
-            if(!store[ph]) store[ph] = { name: "(بدون اسم)", package: "Flex", price: 0 };
-        }
-        await api('store', 'PUT', store);
-        renderStore();
-        alert("تم تحديث المخزن");
-    }
-
-    async function processBillPDF() {
-        const m = document.getElementById('uploadBillMonth').value;
-        const text = await extractPDFText(document.getElementById('billPdf').files[0]);
-        const lines = [];
-        const regex = /(1[0-9]{9})[\s\S]{1,60}?(\d+\.\d{2})/g;
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-            lines.push({ phone: match[1], billPrice: parseFloat(match[2]), paidAmount: 0, status: 'unpaid' });
-            if(!store[match[1]]) {
-                store[match[1]] = { name: "(بدون اسم)", package: "Flex", price: 0 };
-                await api(`store/${match[1]}`, 'PUT', store[match[1]]);
+    // --- معالجة ملف PDF ---
+    async function processPDF(input) {
+        const month = document.getElementById('billMonth').value;
+        if(!month) return alert("اختر الشهر أولاً");
+        
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = async function() {
+            const typedarray = new Uint8Array(this.result);
+            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+            let text = "";
+            for(let i=1; i<=pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(it => it.str).join(" ");
             }
-        }
-        await api(`months/${m}`, 'PUT', lines);
-        monthsData[m] = lines;
-        alert(`تم حفظ ${lines.length} خط لشهر ${m}`);
+
+            // استخراج الرقم والمبلغ الأخير (القيمة بعد الضريبة)
+            // تعبير نمطي للبحث عن الرقم يليه مبلغ
+            const regex = /(1[0-9]{9})[\s\S]{1,60}?(\d+\.\d{2})/g;
+            let match;
+            if(!monthsData[month]) monthsData[month] = [];
+
+            while ((match = regex.exec(text)) !== null) {
+                const phone = match[1];
+                const billAmount = parseFloat(match[2]);
+                
+                // إضافة للبيانات الشهرية
+                monthsData[month].push({
+                    phone: phone,
+                    billPrice: billAmount,
+                    paid: 0,
+                    status: 'لم يدفع'
+                });
+            }
+            saveData();
+            alert("تم رفع الفاتورة وربطها بالمخزن بنجاح!");
+        };
+        reader.readAsArrayBuffer(file);
     }
 
-    // --- العرض والتقارير ---
+    // --- عرض وتحصيل الخطوط ---
+    function loadMonthLines() {
+        const m = document.getElementById('viewMonth').value;
+        const body = document.getElementById('linesBody');
+        body.innerHTML = "";
+        
+        if(!monthsData[m]) return;
+
+        monthsData[m].forEach((line, index) => {
+            if(line.status === 'دفع كلي') return; // إخفاء من دفع كلياً كما طلبت
+
+            const s = store[line.phone] || { name: "غير مسجل", plan: "-" };
+            const myPrice = Math.ceil(line.billPrice * 1.45); // إضافة 45% وجبر الكسر
+            
+            body.innerHTML += `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>0${line.phone}</td>
+                    <td>${s.plan}</td>
+                    <td>${line.billPrice}</td>
+                    <td style="color:blue; font-weight:bold;">${myPrice}</td>
+                    <td>${line.paid}</td>
+                    <td><span class="badge ${line.status === 'لم يدفع' ? 'badge-red' : 'badge-green'}">${line.status}</span></td>
+                    <td>
+                        <button class="btn-green" onclick="payAll('${m}', ${index})">دفع كلي</button>
+                        <button class="btn-blue" onclick="openPartial('${m}', '${line.phone}', ${index})">جزء</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function payAll(m, idx) {
+        const line = monthsData[m][idx];
+        const myPrice = Math.ceil(line.billPrice * 1.45);
+        line.paid = myPrice;
+        line.status = 'دفع كلي';
+        saveData();
+        loadMonthLines();
+    }
+
+    function openPartial(m, ph, idx) {
+        currentEdit = { month: m, index: idx };
+        document.getElementById('partialModal').classList.remove('hidden');
+    }
+
+    function savePartial() {
+        const amount = parseFloat(document.getElementById('partialAmount').value);
+        if(!amount) return;
+        const line = monthsData[currentEdit.month][currentEdit.index];
+        line.paid += amount;
+        line.status = 'دفع جزئي';
+        saveData();
+        closeModal();
+        loadMonthLines();
+    }
+
+    function closeModal() { document.getElementById('partialModal').classList.add('hidden'); }
+
+    // --- التنبيهات والأرباح ---
+    function renderAlerts() {
+        const list = document.getElementById('alertsList');
+        let html = "";
+        let totalProfit = 0;
+
+        for(let m in monthsData) {
+            monthsData[m].forEach(line => {
+                const myPrice = Math.ceil(line.billPrice * 1.45);
+                const remain = myPrice - line.paid;
+                const s = store[line.phone] || { name: line.phone };
+                
+                if(line.status !== 'دفع كلي') {
+                    html += `<div style="padding:10px; border-bottom:1px solid #eee;">
+                        <b>${s.name}</b> متبقي عليه <b style="color:red;">${remain} ج.م</b> (شهر ${m})
+                    </div>`;
+                }
+                // حساب الربح: (سعرك - سعر الفاتورة)
+                if(line.status === 'دفع كلي') {
+                    totalProfit += (myPrice - line.billPrice);
+                }
+            });
+        }
+        list.innerHTML = html || "✅ لا توجد متأخرات حالياً.";
+        document.getElementById('totalProfitValue').innerText = totalProfit.toFixed(2) + " ج.م";
+    }
+
+    // --- إدارة المخزن ---
     function renderStore() {
-        const b = document.getElementById('storeBody');
-        b.innerHTML = "";
+        const body = document.getElementById('storeBody');
+        body.innerHTML = "";
         for(let ph in store) {
-            b.innerHTML += `<tr>
-                <td>${store[ph].name}</td><td>0${ph}</td><td>${store[ph].package}</td><td>${store[ph].price}</td>
+            body.innerHTML += `<tr>
+                <td>${store[ph].name}</td>
+                <td>0${ph}</td>
+                <td>${store[ph].plan}</td>
                 <td><button onclick="deleteStore('${ph}')">🗑️</button></td>
             </tr>`;
         }
     }
 
-    function loadMonthLines() {
-        const m = document.getElementById('viewMonth').value;
-        const data = monthsData[m];
-        const out = document.getElementById('monthLinesOutput');
-        if(!data) { out.innerHTML = "لا توجد بيانات"; return; }
-
-        let html = `<div class="table-wrap"><table><thead><tr>
-            <th>الاسم</th><th>الرقم</th><th>سعرك</th><th>المدفوع</th><th>الحالة</th><th>إجراء</th>
-        </tr></thead><tbody>`;
-        data.forEach((l, idx) => {
-            const s = store[l.phone] || {name:'-', price:0};
-            html += `<tr>
-                <td>${s.name}</td><td>0${l.phone}</td><td>${s.price}</td><td>${l.paidAmount}</td>
-                <td><span class="status-badge ${l.status}">${l.status}</span></td>
-                <td><button class="btn-green" onclick="quickPay('${m}', ${idx})">✅</button></td>
-            </tr>`;
-        });
-        out.innerHTML = html + "</tbody></table></div>";
-    }
-
-    async function quickPay(m, idx) {
-        const line = monthsData[m][idx];
-        line.status = 'paid';
-        line.paidAmount = store[line.phone].price;
-        await api(`months/${m}`, 'PUT', monthsData[m]);
-        loadMonthLines();
-    }
-
-    function renderReports() {
-        const body = document.getElementById('reportsBody');
-        body.innerHTML = "";
-        let totalProfit = 0;
-
-        for(let m in monthsData) {
-            let billSum = 0, mySum = 0;
-            monthsData[m].forEach(l => {
-                billSum += l.billPrice || 0;
-                mySum += store[l.phone]?.price || 0;
-            });
-            let profit = mySum - billSum;
-            totalProfit += profit;
-            body.innerHTML += `<tr>
-                <td>${m}</td><td>${billSum.toFixed(2)} ج</td><td>${mySum} ج</td>
-                <td style="color:green; font-weight:bold;">${profit.toFixed(2)} ج</td>
-            </tr>`;
-        }
-        document.getElementById('reportStats').innerHTML = `
-            <div class="stat-card"><h4>إجمالي الأرباح</h4><p>${totalProfit.toFixed(2)} ج</p></div>
-            <div class="stat-card"><h4>عدد الشهور</h4><p>${Object.keys(monthsData).length}</p></div>
-        `;
-    }
-
-    function generateAlerts() {
-        const list = document.getElementById('alertsList');
-        let html = "";
-        let count = 0;
-        for(let m in monthsData) {
-            monthsData[m].forEach(l => {
-                if(l.status !== 'paid') {
-                    const s = store[l.phone] || {name: l.phone};
-                    count++;
-                    html += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;">
-                        <b>${s.name}</b> - شهر: ${m} <br> 
-                        <span style="color:red">المتبقي: ${(store[l.phone]?.price || 0) - l.paidAmount} ج</span>
-                    </div>`;
-                }
-            });
-        }
-        list.innerHTML = count > 0 ? html : "✅ لا يوجد مديونيات";
-    }
-
-    async function addToStoreManual() {
-        const ph = document.getElementById('addPhone').value.replace(/^0/, '');
-        const data = {
-            name: document.getElementById('addName').value,
-            package: document.getElementById('addPkg').value,
-            price: parseFloat(document.getElementById('addPrice').value)
-        };
-        await api(`store/${ph}`, 'PUT', data);
-        store[ph] = data;
+    function deleteStore(ph) {
+        delete store[ph];
+        saveData();
         renderStore();
     }
 
-    init();
+    function saveData() {
+        localStorage.setItem('store', JSON.stringify(store));
+        localStorage.setItem('monthsData', JSON.stringify(monthsData));
+    }
+
+    // تشغيل أولي
+    const ym = new Date().toISOString().slice(0, 7);
+    document.getElementById('viewMonth').value = ym;
+    document.getElementById('billMonth').value = ym;
+    renderAlerts();
 </script>
 </body>
 </html>
