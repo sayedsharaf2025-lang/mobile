@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام إدارة فواتير فودافون السحابي</title>
+    <title>نظام إدارة فواتير فودافون السحابي الذكي</title>
     <style>
         :root {
             --red: #e60000;
@@ -609,7 +609,7 @@
 
         if (!fileInput.files.length || !month) { showToast("⚠️ املأ الملف واختر الشهر", "warning"); return; }
         const resDiv = document.getElementById('uploadResult');
-        resDiv.innerHTML = '<div class="alert-item info">⏳ جاري قراءة ملف الـ PDF وتفصيص الخطوط سحابياً...</div>';
+        resDiv.innerHTML = '<div class="alert-item info">⏳ جاري فحص ملف الـ PDF واستخراج الخطوط والباقات الذكية سحابياً...</div>';
 
         try {
             const buffer = await fileInput.files[0].arrayBuffer();
@@ -623,37 +623,81 @@
 
             const tokens = text.split(/\s+/);
             const uniqueMap = new Map();
+            
+            // البحث الذكي عن الأرقام واستخراج الفاتورة واكتشاف الباقات المحيطة بالرقم
             for (let i = 0; i < tokens.length; i++) {
                 if (/^1[0-9]{9}$/.test(tokens[i])) {
+                    let phone = tokens[i];
+                    let invoiceVal = 0;
+                    let detectedPackage = "غير معروف";
+                    let packageCost = 0;
+
+                    // 1. استخراج الفاتورة (أول رقم عشري يظهر بعد الهاتف)
                     for (let o = 1; o <= 5; o++) {
                         let next = tokens[i + o];
                         if (next && /^[0-9]+(\.[0-9]+)?$/.test(next)) {
-                            uniqueMap.set(tokens[i], parseFloat(next));
+                            invoiceVal = parseFloat(next);
                             break;
                         }
                     }
+
+                    // 2. البحث العكسي والأمامي عن اسم الباقة وتكلفتها الأصلية (مثل Flex أو Business)
+                    let contextRange = tokens.slice(Math.max(0, i - 15), Math.min(tokens.length, i + 15)).join(' ');
+                    
+                    // محاولة صيد الكلمات المفتاحية للباقات المشهورة بفواتير فودافون الشركات والربط مع أقرب رقم مالي
+                    let packMatch = contextRange.match(/(BusinessFlex\+?|Business\s*Flex|Flex\s*Revamp|Flex|FreeSPOCFlex|SPOC)/i);
+                    if (packMatch) {
+                        detectedPackage = packMatch[0];
+                        // محاولة العثور على القيمة السعرية الملتصقة بالباقة (مثل Flex 35 أو Flex 60)
+                        let costMatch = contextRange.match(/(?:Flex|Business|Revamp)\s*([0-9]{2,3})/i);
+                        if (costMatch) {
+                            packageCost = parseFloat(costMatch[1]);
+                        }
+                    }
+
+                    uniqueMap.set(phone, { invoicePrice: invoiceVal, packageType: detectedPackage, packageCost: packageCost });
                 }
             }
 
             let monthData = [];
             let checkCloudNames = false;
-            for (let [ph, inv] of uniqueMap.entries()) {
+            
+            for (let [ph, extracted] of uniqueMap.entries()) {
+                // إذا كان الرقم جديداً تماماً وغير مسجل في السيستم
                 if (!globalNames[ph]) {
-                    globalNames[ph] = { name: "⚠️ بدون اسم", myPrice: 0, packageType: "غير معروف" };
+                    // نضع له اسماً تلقائياً معتمداً على البيانات المكتشفة من الـ PDF
+                    globalNames[ph] = { 
+                        name: `🆕 خط جديد (0${ph})`, 
+                        myPrice: extracted.packageCost > 0 ? extracted.packageCost : extracted.invoicePrice, // السعر هو تكلفة الباقة أو الفاتورة التلقائية
+                        packageType: extracted.packageType 
+                    };
                     checkCloudNames = true;
                 }
-                monthData.push({ phone: ph, name: globalNames[ph].name, myPrice: globalNames[ph].myPrice, invoicePrice: inv, packageType: globalNames[ph].packageType, paid: false });
+                
+                monthData.push({ 
+                    phone: ph, 
+                    name: globalNames[ph].name, 
+                    myPrice: globalNames[ph].myPrice, 
+                    invoicePrice: extracted.invoicePrice, 
+                    packageType: globalNames[ph].packageType, 
+                    paid: false 
+                });
             }
 
-            if(checkCloudNames) await apiRequest('/names', 'PUT', globalNames);
+            // تحديث قائمة الأسماء سحابياً إذا تم العثور على أرقام جديدة
+            if(checkCloudNames) {
+                await apiRequest('/names', 'PUT', globalNames);
+                updateTextareaFromMap();
+                renderManageTable();
+            }
 
             await apiRequest(`/months/${month}`, 'PUT', monthData);
             globalMonths[month] = monthData;
 
-            resDiv.innerHTML = `<div class="alert-item info">✅ تم المعالجة والحفظ السحابي بنجاح لشهر ${month}! (${monthData.length} رقم)</div>`;
+            resDiv.innerHTML = `<div class="alert-item info">✅ تم الفحص بنجاح! تم حفظ شهر ${month} سحابياً بواقع (${monthData.length} رقم)، وتحديث أي أرقام وباقات جديدة في الإعدادات تلقائياً.</div>`;
             showTab('alerts');
         } catch(e) {
-            resDiv.innerHTML = `<div class="alert-item danger">❌ خطأ أثناء المعالجة السحابية: ${e.message}</div>`;
+            resDiv.innerHTML = `<div class="alert-item danger">❌ خطأ أثناء المعالجة الذكية: ${e.message}</div>`;
         }
     }
 
