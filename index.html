@@ -67,6 +67,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
 .badge-paid{background:var(--green-light);color:var(--green);}
 .badge-unpaid{background:#fee2e2;color:var(--red);}
 .badge-partial{background:var(--yellow-light);color:var(--yellow);}
+.badge-blue{background:#dbeafe;color:#1d4ed8;}
 .lc-pkg{font-size:11px;color:var(--gray-dark);margin-bottom:8px;}
 .lc-date{font-size:10px;color:var(--gray-dark);margin-top:4px;}
 .lc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
@@ -194,8 +195,10 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
       <button class="chip" onclick="setFilter('partial',this)">دفع جزء</button>
       <button class="chip" onclick="setFilter('paid',this)">دفع كامل</button>
       <button class="chip" onclick="setFilter('overprice',this)">فاتورة أعلى</button>
+      <button class="chip" onclick="setFilter('prepaid',this)">💳 مقدم</button>
     </div>
     <div id="statsGrid" class="stats-grid hidden"></div>
+    <div id="nameTotalBar" class="hidden" style="background:var(--blue-light);border:1.5px solid var(--blue);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;font-size:13px;"></div>
     <div id="lineCardsWrap" class="mob-only"></div>
     <div id="desktopTblWrap" class="desk-only"></div>
   </div>
@@ -236,6 +239,17 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
     </div>
 
     <div id="uploadResult"></div>
+
+    <!-- حذف فاتورة موجودة -->
+    <div class="card">
+      <div class="card-title" style="color:var(--red);">🗑️ حذف فاتورة موجودة</div>
+      <div class="alert-item warning" style="font-size:12px;margin-bottom:10px;">⚠️ اختر الشهر ثم احذف — لا يمكن التراجع</div>
+      <div class="row-g">
+        <select id="deleteMonthSel" style="flex:1;margin:0;"></select>
+        <button class="btn btn-red" onclick="deleteInvoice()" style="margin-top:0;width:auto;padding:10px 16px;">🗑️ حذف</button>
+      </div>
+      <div id="deleteResult" style="margin-top:8px;"></div>
+    </div>
 
     <!-- Preview before save -->
     <div id="pdfPreviewCard" class="card hidden">
@@ -382,6 +396,37 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
   </div>
 </div>
 
+<!-- PREPAID MODAL -->
+<div id="prepaidModal" class="modal-bg hidden">
+  <div class="modal-box">
+    <div class="modal-title">💳 تسجيل دفع مقدم</div>
+    <input type="hidden" id="prepaidPhone">
+    <div id="prepaidName" style="font-size:14px;font-weight:700;margin-bottom:4px;"></div>
+    <div id="prepaidPkg" style="font-size:12px;color:var(--gray-dark);margin-bottom:12px;"></div>
+    <label id="prepaidLabel">المبلغ المدفوع مقدماً</label>
+    <input type="number" id="prepaidAmount" placeholder="أدخل المبلغ" min="0" step="0.01">
+    <div id="prepaidInfo" style="font-size:12px;color:var(--blue);margin-top:6px;font-weight:600;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-blue" onclick="submitPrepaid()">💳 تسجيل مقدم</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTLE MODAL -->
+<div id="settleModal" class="modal-bg hidden">
+  <div class="modal-box">
+    <div class="modal-title">✅ تسوية دفع مقدم</div>
+    <input type="hidden" id="settlePhone">
+    <div id="settleName" style="font-size:14px;font-weight:700;margin-bottom:8px;"></div>
+    <div id="settleInfo" style="font-size:13px;line-height:1.8;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="submitSettle()">✅ تسوية كاملة</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const KEY_N='vf_names3', KEY_M='vf_months3', KEY_H='vf_history';
 let gN={}, gM={}, gH={}, curData=[], curFilter='all', curMonth='';
@@ -406,6 +451,7 @@ function boot(){
   curMonth=ym;
   renderManageTable();
   generateAlerts();
+  populateDeleteMonths();
 }
 
 function loadBuiltIn(){
@@ -484,6 +530,7 @@ function showTab(t,el){
   if(t==='settings') renderManageTable();
   if(t==='alerts') generateAlerts();
   if(t==='reports') renderReports();
+  if(t==='upload') populateDeleteMonths();
 }
 
 /* ========== LINES ========== */
@@ -505,10 +552,35 @@ function renderLines(){
   let data=[...curData];
   const search=(document.getElementById('searchLines').value||'').trim().toLowerCase();
   if(search) data=data.filter(d=>(d.name||'').toLowerCase().includes(search)||String(d.phone).includes(search));
-  if(curFilter==='paid') data=data.filter(d=>d.paid&&d.paidAmount>=d.myPrice);
-  if(curFilter==='partial') data=data.filter(d=>!d.paid&&d.paidAmount>0);
-  if(curFilter==='unpaid') data=data.filter(d=>!d.paid&&(!d.paidAmount||d.paidAmount===0));
-  if(curFilter==='overprice') data=data.filter(d=>d.invoicePrice>d.myPrice);
+
+  // إجمالي الأسماء المتشابهة
+  const bar=document.getElementById('nameTotalBar');
+  if(search && search.length>=2){
+    const matched=data;
+    if(matched.length>1){
+      const totalMy=matched.reduce((s,d)=>s+d.myPrice,0);
+      const totalPaid=matched.reduce((s,d)=>s+(d.paidAmount||0),0);
+      const totalRem=matched.reduce((s,d)=>s+Math.max(0,d.myPrice-(d.paidAmount||0)),0);
+      bar.innerHTML=`👥 <b>${matched.length} نتيجة</b> — إجمالي: <b style="color:var(--blue)">${totalMy.toFixed(0)} ج</b> | تم تحصيل: <b style="color:var(--green)">${totalPaid.toFixed(0)} ج</b> | متبقي: <b style="color:var(--red)">${totalRem.toFixed(0)} ج</b>`;
+      bar.classList.remove('hidden');
+    } else { bar.classList.add('hidden'); }
+  } else { bar.classList.add('hidden'); }
+
+  if(curFilter==='paid') data=data.filter(d=>d.paid&&d.paidAmount>=d.myPrice&&!d.prepaid);
+  else if(curFilter==='partial') data=data.filter(d=>!d.paid&&d.paidAmount>0&&!d.prepaid);
+  else if(curFilter==='unpaid') data=data.filter(d=>!d.paid&&(!d.paidAmount||d.paidAmount===0)&&!d.prepaid);
+  else if(curFilter==='overprice') data=data.filter(d=>d.invoicePrice>d.myPrice);
+  else if(curFilter==='prepaid') data=data.filter(d=>d.prepaid);
+  else {
+    // الكل: إخفاء اللي دفع كامل ومفيش فرق ومش مقدم
+    data=data.filter(d=>{
+      const fullyPaid=d.paid&&d.paidAmount>=d.myPrice;
+      const hasDiff=d.invoicePrice>d.myPrice;
+      const isPrepaid=d.prepaid;
+      if(fullyPaid&&!hasDiff&&!isPrepaid) return false;
+      return true;
+    });
+  }
 
   // Sort
   const sortBy=document.getElementById('sortBy').value;
@@ -532,26 +604,38 @@ function renderLines(){
     const diff=d.myPrice-d.invoicePrice;
     const isPaid=d.paid&&d.paidAmount>=d.myPrice;
     const isP=!isPaid&&d.paidAmount>0;
-    const cc=d.invoicePrice>d.myPrice?'overprice':isPaid?'paid':isP?'partial':'unpaid';
-    const bc=isPaid?'badge-paid':isP?'badge-partial':'badge-unpaid';
-    const bt=isPaid?'✅ دفع كامل':isP?'💛 جزئي ('+d.paidAmount+' ج)':'❌ لم يدفع';
+    const isPrepaid=d.prepaid;
+    const hasDiff=d.invoicePrice>0&&d.invoicePrice>d.myPrice;
+    const prepaidRem=isPrepaid&&d.invoicePrice>0?Math.max(0,d.invoicePrice-(d.paidAmount||0)):0;
+    const cc=hasDiff?'overprice':isPaid?'paid':isP?'partial':isPrepaid?'line-card--prepaid':'unpaid';
+    const bc=isPaid?'badge-paid':isP?'badge-partial':isPrepaid?'badge-blue':'badge-unpaid';
+    const bt=isPaid?'✅ دفع كامل':isP?'💛 جزئي ('+d.paidAmount+' ج)':isPrepaid?'💳 مقدم ('+( d.paidAmount||0)+' ج)':'❌ لم يدفع';
     const nm=d.name||'<i style="color:var(--gray-dark);font-size:12px;">بدون اسم</i>';
-    const hist=getPayHistory(d.phone);
-    const paidDate=d.paidDate?'<div class="lc-date">📅 تاريخ الدفع: '+d.paidDate+'</div>':'';
-    cards+=`<div class="line-card ${cc}">
-      <div class="lc-top"><div><div class="lc-name">${nm}</div><div class="lc-phone">0${d.phone}</div></div><span class="lc-badge ${bc}">${bt}</span></div>
+    const paidDate=d.paidDate?'<div class="lc-date">📅 '+d.paidDate+'</div>':'';
+    const prepaidAlert=isPrepaid&&d.invoicePrice>0&&d.invoicePrice>( d.paidAmount||0)?
+      `<div style="background:#fee2e2;border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:8px;">⚠️ فرق متأخر: <b style="color:var(--red)">${prepaidRem.toFixed(1)} ج</b> (الفاتورة ${d.invoicePrice} ج — مقدم ${d.paidAmount||0} ج)</div>`:'';
+
+    let actionBtns='';
+    if(isPaid && !hasDiff){
+      actionBtns=`<button class="btn btn-gray" onclick="cancelPay('${d.phone}')">↩️ إلغاء</button><button class="btn btn-blue btn-sm" onclick="showHistory('${d.phone}')" style="margin-top:0;">📜 سجل</button>`;
+    } else if(isPrepaid){
+      actionBtns=`<button class="btn btn-green" onclick="openSettle('${d.phone}')">✅ تسوية</button><button class="btn btn-gray" onclick="cancelPay('${d.phone}')">↩️ إلغاء</button>`;
+    } else {
+      actionBtns=`<button class="btn btn-green" onclick="fullPay('${d.phone}')">💰 دفع كامل</button><button class="btn btn-gray" onclick="openPartial('${d.phone}')">💵 جزئي</button><button class="btn btn-blue" onclick="openPrepaid('${d.phone}')" style="background:var(--blue);">💳 مقدم</button>`;
+    }
+
+    cards+=`<div class="line-card ${cc}" style="${isPrepaid&&!hasDiff?'border-color:#93c5fd;background:#eff6ff;':''}">
+      <div class="lc-top"><div><div class="lc-name">${nm}</div><div class="lc-phone">0${d.phone}</div></div><span class="lc-badge ${bc}" style="${isPrepaid&&!isPaid?'background:#dbeafe;color:#1d4ed8;':''}">${bt}</span></div>
       <div class="lc-pkg">📦 ${d.packageType}</div>
       ${paidDate}
+      ${prepaidAlert}
       <div class="lc-stats">
         <div class="ls"><div class="ls-v">${d.myPrice}</div><div class="ls-l">سعرك</div></div>
-        <div class="ls"><div class="ls-v">${d.invoicePrice}</div><div class="ls-l">الفاتورة</div></div>
-        <div class="ls ${diff>=0?'pos':'neg'}"><div class="ls-v">${diff.toFixed(1)}</div><div class="ls-l">الفرق</div></div>
+        <div class="ls"><div class="ls-v">${d.invoicePrice||'—'}</div><div class="ls-l">الفاتورة</div></div>
+        <div class="ls ${diff>=0?'pos':'neg'}"><div class="ls-v">${d.invoicePrice?diff.toFixed(1):'—'}</div><div class="ls-l">الفرق</div></div>
         <div class="ls"><div class="ls-v">${rem}</div><div class="ls-l">متبقي</div></div>
       </div>
-      <div class="lc-actions">${isPaid
-        ?'<button class="btn btn-gray" onclick="cancelPay(\''+d.phone+'\')">↩️ إلغاء</button><button class="btn btn-blue btn-sm" onclick="showHistory(\''+d.phone+'\')" style="margin-top:0;">📜 سجل</button>'
-        :'<button class="btn btn-green" onclick="fullPay(\''+d.phone+'\')">💰 دفع كامل</button><button class="btn btn-gray" onclick="openPartial(\''+d.phone+'\')">💵 جزئي</button>'
-      }</div>
+      <div class="lc-actions">${actionBtns}</div>
     </div>`;
   }
   cw.innerHTML=cards;
@@ -561,17 +645,21 @@ function renderLines(){
     const diff=d.myPrice-d.invoicePrice;
     const isPaid=d.paid&&d.paidAmount>=d.myPrice;
     const isP=!isPaid&&d.paidAmount>0;
-    const rc=d.invoicePrice>d.myPrice?'overprice':isPaid?'paid':isP?'partial':'unpaid';
-    const st=isPaid?'✅ دفع':isP?'💛 جزئي('+d.paidAmount+')':'❌ لم يدفع';
+    const isPrepaid=d.prepaid;
+    const hasDiff=d.invoicePrice>0&&d.invoicePrice>d.myPrice;
+    const rc=hasDiff?'overprice':isPaid?'paid':isP?'partial':isPrepaid?'partial':'unpaid';
+    const st=isPaid?'✅ دفع':isP?'💛 جزئي('+d.paidAmount+')':isPrepaid?'💳 مقدم('+( d.paidAmount||0)+')':'❌ لم يدفع';
     const nm=d.name||'<i style="color:#aaa">بدون اسم</i>';
-    rows+=`<tr class="${rc}"><td><b>${nm}</b></td><td dir="ltr">0${d.phone}</td><td>${d.packageType}</td>
-      <td>${d.myPrice}</td><td>${d.invoicePrice}</td>
-      <td style="${diff>=0?'color:var(--green)':'color:var(--red)'}">${diff.toFixed(1)}</td>
+    let actBtns=isPaid&&!hasDiff
+      ?`<button class="btn btn-gray btn-sm" onclick="cancelPay('${d.phone}')">↩️</button>`
+      :isPrepaid
+        ?`<button class="btn btn-green btn-sm" onclick="openSettle('${d.phone}')">✅</button>`
+        :`<button class="btn btn-green btn-sm" onclick="fullPay('${d.phone}')">💰</button><button class="btn btn-gray btn-sm" onclick="openPartial('${d.phone}')">💵</button><button class="btn btn-blue btn-sm" onclick="openPrepaid('${d.phone}')">💳</button>`;
+    rows+=`<tr class="${rc}" style="${isPrepaid?'background:#eff6ff;':''}"><td><b>${nm}</b></td><td dir="ltr">0${d.phone}</td><td>${d.packageType}</td>
+      <td>${d.myPrice}</td><td>${d.invoicePrice||'—'}</td>
+      <td style="${diff>=0?'color:var(--green)':'color:var(--red)'}">${d.invoicePrice?diff.toFixed(1):'—'}</td>
       <td>${rem}</td><td>${st}</td>
-      <td>${isPaid
-        ?'<button class="btn btn-gray btn-sm" onclick="cancelPay(\''+d.phone+'\')">↩️</button>'
-        :'<button class="btn btn-green btn-sm" onclick="fullPay(\''+d.phone+'\')">💰</button><button class="btn btn-gray btn-sm" onclick="openPartial(\''+d.phone+'\')">💵</button>'
-      }</td></tr>`;
+      <td>${actBtns}</td></tr>`;
   }
   dw.innerHTML='<div style="overflow-x:auto"><table class="dt"><tr><th>الاسم</th><th>الرقم</th><th>الباقة</th><th>سعرك</th><th>الفاتورة</th><th>الفرق</th><th>متبقي</th><th>الحالة</th><th>إجراء</th></tr>'+rows+'</table></div>';
 }
@@ -617,7 +705,8 @@ function showHistory(ph){
     html+='<tr style="background:var(--gray);"><th style="padding:6px;">التاريخ</th><th>المبلغ</th><th>النوع</th><th>الشهر</th></tr>';
     [...hist].reverse().forEach(h=>{
       const color=h.type==='cancel'?'color:var(--red)':'color:var(--green)';
-      html+=`<tr><td style="padding:5px;border-bottom:1px solid var(--gray-mid);">${h.date} ${h.time}</td><td style="${color};font-weight:700;">${h.amount} ج</td><td>${h.type==='full'?'✅ كامل':h.type==='partial'?'💛 جزئي':'↩️ إلغاء'}</td><td>${h.month||''}</td></tr>`;
+      const typeLabel=h.type==='full'?'✅ كامل':h.type==='partial'?'💛 جزئي':h.type==='prepaid'?'💳 مقدم':h.type==='settle'?'✅ تسوية':'↩️ إلغاء';
+      html+=`<tr><td style="padding:5px;border-bottom:1px solid var(--gray-mid);">${h.date} ${h.time}</td><td style="${color};font-weight:700;">${h.amount} ج</td><td>${typeLabel}</td><td>${h.month||''}</td></tr>`;
     });
     html+='</table>';
   }
@@ -654,6 +743,96 @@ function submitPartial(){
   if(curData[i].paid) curData[i].paidDate=new Date().toLocaleDateString('ar-EG');
   recordHistory(ph,amt,'partial');
   closeModal();saveCur();
+}
+
+/* ========== PREPAID ========== */
+function openPrepaid(ph){
+  const d=curData.find(d=>d.phone===ph)||{};
+  const info=gN[ph]||{};
+  document.getElementById('prepaidPhone').value=ph;
+  document.getElementById('prepaidName').textContent=(d.name||info.name||'بدون اسم')+' — 0'+ph;
+  document.getElementById('prepaidPkg').textContent='📦 '+(d.packageType||info.packageType||'');
+  document.getElementById('prepaidLabel').textContent='المبلغ المدفوع مقدماً (سعرك: '+(d.myPrice||info.myPrice||0)+' ج)';
+  document.getElementById('prepaidAmount').value=d.paidAmount||'';
+  document.getElementById('prepaidInfo').textContent='سيتحسب تلقائياً لما ترفع الفاتورة';
+  document.getElementById('prepaidModal').classList.remove('hidden');
+}
+
+function submitPrepaid(){
+  const ph=document.getElementById('prepaidPhone').value;
+  const amt=parseFloat(document.getElementById('prepaidAmount').value)||0;
+  if(!amt){toast('⚠️ أدخل المبلغ');return;}
+  // لو مش موجود في curData نضيفه
+  let i=curData.findIndex(d=>d.phone===ph);
+  if(i===-1){
+    const info=gN[ph]||{name:'',packageType:'غير معروف',myPrice:0};
+    curData.push({phone:ph,name:info.name,myPrice:info.myPrice,invoicePrice:0,packageType:info.packageType,paid:false,paidAmount:0});
+    i=curData.length-1;
+  }
+  curData[i].prepaid=true;
+  curData[i].paidAmount=amt;
+  curData[i].paid=false;
+  curData[i].paidDate=new Date().toLocaleDateString('ar-EG');
+  recordHistory(ph,amt,'prepaid');
+  closeModal();saveCur();
+  toast('💳 تم تسجيل الدفع المقدم: '+amt+' ج');
+}
+
+function openSettle(ph){
+  const d=curData.find(d=>d.phone===ph);if(!d)return;
+  document.getElementById('settlePhone').value=ph;
+  document.getElementById('settleName').textContent=(d.name||'بدون اسم')+' — 0'+ph;
+  const prepaidAmt=d.paidAmount||0;
+  const invAmt=d.invoicePrice||0;
+  const diff=invAmt-prepaidAmt;
+  let infoHtml=`💳 مدفوع مقدماً: <b>${prepaidAmt} ج</b><br>`;
+  if(invAmt>0){
+    infoHtml+=`📄 الفاتورة: <b>${invAmt} ج</b><br>`;
+    if(diff>0) infoHtml+=`<span style="color:var(--red);">⚠️ فرق متأخر: <b>${diff.toFixed(1)} ج</b></span>`;
+    else infoHtml+=`<span style="color:var(--green);">✅ لا يوجد فرق</span>`;
+  } else {
+    infoHtml+=`<span style="color:var(--gray-dark);font-size:12px;">الفاتورة لم ترفع بعد</span>`;
+  }
+  document.getElementById('settleInfo').innerHTML=infoHtml;
+  document.getElementById('settleModal').classList.remove('hidden');
+}
+
+function submitSettle(){
+  const ph=document.getElementById('settlePhone').value;
+  const i=curData.findIndex(d=>d.phone===ph);if(i===-1)return;
+  const d=curData[i];
+  // التسوية: يدفع الفرق لو في فاتورة، أو يتعامل كدفع كامل
+  const finalAmt=d.invoicePrice>0?d.invoicePrice:d.myPrice;
+  curData[i].prepaid=false;
+  curData[i].paidAmount=finalAmt;
+  curData[i].paid=true;
+  curData[i].paidDate=new Date().toLocaleDateString('ar-EG');
+  recordHistory(ph,finalAmt,'settle');
+  closeModal();saveCur();
+  toast('✅ تمت التسوية');
+}
+
+/* ========== DELETE INVOICE ========== */
+function populateDeleteMonths(){
+  const sel=document.getElementById('deleteMonthSel');
+  if(!sel)return;
+  const months=Object.keys(gM).sort().reverse();
+  sel.innerHTML=months.length
+    ?months.map(m=>`<option value="${m}">${m} (${gM[m].length} خط)</option>`).join('')
+    :'<option value="">— لا توجد فواتير —</option>';
+}
+
+function deleteInvoice(){
+  const sel=document.getElementById('deleteMonthSel');
+  const m=sel.value;
+  if(!m||!gM[m]){toast('⚠️ لا توجد فاتورة لحذفها');return;}
+  if(!confirm('حذف فاتورة '+m+' ('+gM[m].length+' خط)؟ لا يمكن التراجع.')){return;}
+  delete gM[m];
+  saveM();
+  populateDeleteMonths();
+  generateAlerts();
+  document.getElementById('deleteResult').innerHTML='<div class="alert-item success">✅ تم حذف فاتورة '+m+'</div>';
+  toast('🗑️ تم حذف فاتورة '+m);
 }
 
 /* ========== ALERTS ========== */
@@ -1151,20 +1330,46 @@ async function processInvoice(){
 function savePdfData(){
   if(!pendingPdfData) return;
   const {month, items}=pendingPdfData;
-  let newCount=0;
+  let newCount=0, prepaidCount=0, diffCount=0;
   const monthData=[];
   items.forEach((d,idx)=>{
     const editedInv=parseFloat(document.getElementById('inv_'+idx).value)||0;
     if(!gN[d.phone]){gN[d.phone]={name:'',packageType:d.packageType,basePrice:0,myPrice:0};newCount++;}
     const c=gN[d.phone];
-    monthData.push({phone:d.phone,name:c.name,myPrice:c.myPrice,invoicePrice:editedInv,packageType:c.packageType,paid:false,paidAmount:0});
+    // هل في دفع مقدم لهذا الشهر؟
+    const existingEntry=(gM[month]||[]).find(e=>e.phone===d.phone);
+    const wasPrepaid=existingEntry&&existingEntry.prepaid;
+    const prepaidAmt=wasPrepaid?(existingEntry.paidAmount||0):0;
+    let paid=false, paidAmount=0;
+    if(wasPrepaid){
+      prepaidCount++;
+      if(editedInv<=prepaidAmt){
+        // الفاتورة = سعره أو أقل → دفع كامل
+        paid=true; paidAmount=prepaidAmt;
+      } else {
+        // الفاتورة أعلى → يظل مقدم مع فرق
+        paid=false; paidAmount=prepaidAmt;
+        diffCount++;
+      }
+    }
+    monthData.push({
+      phone:d.phone,name:c.name,myPrice:c.myPrice,invoicePrice:editedInv,
+      packageType:c.packageType,paid,paidAmount,
+      prepaid:wasPrepaid&&!paid,
+      paidDate:wasPrepaid?existingEntry.paidDate:null
+    });
   });
   if(newCount){saveN();renderManageTable();}
   gM[month]=monthData; saveM();
-  document.getElementById('uploadResult').innerHTML=`<div class="alert-item success">✅ تم حفظ فاتورة <strong>${month}</strong> (${monthData.length} خط)<br>${newCount?'<span class="a-badge orange">⚠️ '+newCount+' رقم جديد — أضف أسماءهم من الإعدادات</span>':'<span class="a-badge green">✅ كل الأرقام معروفة</span>'}</div>`;
+  let msg=`✅ تم حفظ فاتورة <strong>${month}</strong> (${monthData.length} خط)`;
+  if(prepaidCount) msg+=`<br><span class="a-badge blue">💳 ${prepaidCount} مقدم تم تطبيقهم تلقائياً</span>`;
+  if(diffCount) msg+=`<span class="a-badge orange"> ⚠️ ${diffCount} عندهم فرق متأخر</span>`;
+  if(newCount) msg+=`<br><span class="a-badge orange">⚠️ ${newCount} رقم جديد — أضف أسماءهم</span>`;
+  document.getElementById('uploadResult').innerHTML=`<div class="alert-item success">${msg}</div>`;
   document.getElementById('pdfPreviewCard').classList.add('hidden');
   document.getElementById('hdrSub').textContent='آخر فاتورة: '+month;
   pendingPdfData=null;
+  populateDeleteMonths();
   generateAlerts();
   toast('✅ تم حفظ الفاتورة بنجاح');
 }
@@ -1174,6 +1379,8 @@ function closeModal(){
   document.getElementById('editModal').classList.add('hidden');
   document.getElementById('partialModal').classList.add('hidden');
   document.getElementById('histModal').classList.add('hidden');
+  document.getElementById('prepaidModal').classList.add('hidden');
+  document.getElementById('settleModal').classList.add('hidden');
 }
 function toast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1d23;color:white;padding:10px 20px;border-radius:20px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);white-space:nowrap;';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
 
