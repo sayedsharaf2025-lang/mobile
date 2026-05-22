@@ -218,26 +218,43 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
       <div class="card-title">📅 اختر الشهر</div>
       <input type="month" id="uploadMonth">
     </div>
+
+    <!-- Excel Invoice Upload (PRIMARY) -->
     <div class="card">
-      <div class="card-title">📄 رفع ملف الفاتورة PDF</div>
-      <div class="alert-item info" style="margin-bottom:10px;font-size:12px;">
-        💡 النظام سيستخرج <strong>الإجمالي بعد الضريبة</strong> لكل خط — يمكنك مراجعة وتعديل المبالغ قبل الحفظ.
+      <div class="card-title">📊 رفع فاتورة Excel (موصى به)</div>
+      <div class="alert-item success" style="margin-bottom:10px;font-size:12px;">
+        ✅ يقرأ ملف <strong>Summarized_*.xlsx</strong> من فودافون مباشرة<br>
+        📌 يستورد <strong>Voice Lines</strong> و <strong>ADSL Lines</strong> تلقائياً
       </div>
-      <div class="upload-zone" id="uploadZone">
-        <input type="file" id="pdfInput" accept=".pdf" onchange="onFileChosen(this)">
-        <div class="uz-icon">📄</div>
-        <div class="uz-title" id="uzTitle">اضغط لاختيار ملف PDF</div>
+      <div class="upload-zone" id="invoiceXlsZone">
+        <input type="file" id="invoiceXlsInput" accept=".xlsx,.xls" onchange="onInvoiceXlsChosen(this)">
+        <div class="uz-icon">📊</div>
+        <div class="uz-title" id="invoiceXlsTitle">اضغط لاختيار ملف Excel الفاتورة</div>
         <div class="uz-sub">أو اسحب الملف هنا</div>
       </div>
-      <button class="btn btn-red" onclick="processInvoice()">🔄 معالجة الفاتورة</button>
+      <button class="btn btn-green" onclick="processInvoiceExcel()">🔄 معالجة فاتورة Excel</button>
     </div>
+
     <div id="uploadResult"></div>
-    <!-- PDF Preview - editable before saving -->
+
+    <!-- Preview before save -->
     <div id="pdfPreviewCard" class="card hidden">
       <div class="card-title">✏️ مراجعة وتعديل المبالغ</div>
       <div class="alert-item warning" style="font-size:12px;margin-bottom:10px;">⚠️ راجع المبالغ — عدّل أي مبلغ غلط قبل الحفظ</div>
       <div class="pdf-preview" id="pdfPreviewTable"></div>
       <button class="btn btn-green" onclick="savePdfData()" style="margin-top:12px;">💾 حفظ الفاتورة</button>
+    </div>
+
+    <!-- PDF fallback -->
+    <div class="card">
+      <div class="card-title" style="color:var(--gray-dark);font-size:13px;">📄 أو رفع PDF (احتياطي)</div>
+      <div class="upload-zone" id="uploadZone" style="padding:16px;">
+        <input type="file" id="pdfInput" accept=".pdf" onchange="onFileChosen(this)">
+        <div class="uz-icon" style="font-size:26px;">📄</div>
+        <div class="uz-title" id="uzTitle" style="font-size:13px;">اضغط لاختيار ملف PDF</div>
+        <div class="uz-sub">أو اسحب الملف هنا</div>
+      </div>
+      <button class="btn btn-gray" onclick="processInvoice()" style="font-size:13px;">🔄 معالجة PDF</button>
     </div>
   </div>
 
@@ -931,6 +948,78 @@ function importExcel(inp){
   reader.readAsArrayBuffer(file);
 }
 
+/* ========== EXCEL INVOICE PROCESSING ========== */
+function onInvoiceXlsChosen(inp){document.getElementById('invoiceXlsTitle').textContent=inp.files[0]?.name||'اضغط لاختيار ملف Excel';}
+
+async function processInvoiceExcel(){
+  const fi=document.getElementById('invoiceXlsInput');
+  const month=document.getElementById('uploadMonth').value;
+  if(!fi.files.length){toast('⚠️ يرجى اختيار ملف Excel');return;}
+  if(!month){toast('⚠️ يرجى اختيار الشهر');return;}
+  const res=document.getElementById('uploadResult');
+  res.innerHTML='<div class="alert-item info">⏳ جاري قراءة الفاتورة…</div>';
+  try{
+    const buf=await fi.files[0].arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+    const found=new Map();
+
+    // Voice Lines: عمود A (0) رقم الموبايل، عمود J (9) Total After Taxes
+    const voiceSheet=wb.SheetNames.find(s=>s.toLowerCase().includes('voice'));
+    if(voiceSheet){
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[voiceSheet],{header:1,defval:''});
+      rows.forEach(row=>{
+        const ph=String(row[0]||'').trim().replace(/^0+/,'');
+        const amt=parseFloat(row[9]);
+        if(/^\d{9,10}$/.test(ph)&&!isNaN(amt)&&amt>0) found.set(ph,amt);
+      });
+    }
+
+    // ADSL Lines: عمود A (0) الرقم، عمود F (5) Total After Taxes
+    const adslSheet=wb.SheetNames.find(s=>s.toLowerCase().includes('adsl'));
+    if(adslSheet){
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[adslSheet],{header:1,defval:''});
+      rows.forEach(row=>{
+        const ph=String(row[0]||'').trim().replace(/^0+/,'');
+        const amt=parseFloat(row[5]);
+        if(/^\d{8,10}$/.test(ph)&&!isNaN(amt)&&amt>0) found.set(ph,amt);
+      });
+    }
+
+    if(!found.size){res.innerHTML='<div class="alert-item warning">⚠️ لم يتم العثور على بيانات. تأكد من اختيار ملف فاتورة فودافون الصحيح.</div>';return;}
+
+    pendingPdfData={month,items:[]};
+    for(let[ph,inv] of found.entries()){
+      const c=gN[ph]||{name:'',packageType:'غير معروف',myPrice:0};
+      pendingPdfData.items.push({phone:ph,name:c.name,myPrice:c.myPrice,invoicePrice:inv,packageType:c.packageType,isNew:!gN[ph]});
+    }
+
+    res.innerHTML=`<div class="alert-item success">✅ تم العثور على <strong>${found.size}</strong> خط — راجع المبالغ أدناه قبل الحفظ.</div>`;
+
+    let tableHtml='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:400px;">';
+    tableHtml+='<tr><th style="background:var(--red);color:white;padding:7px 6px;">الاسم</th><th style="background:var(--red);color:white;padding:7px 6px;">الرقم</th><th style="background:var(--red);color:white;padding:7px 6px;">سعرك</th><th style="background:var(--red);color:white;padding:7px 6px;">فاتورة فودافون</th><th style="background:var(--red);color:white;padding:7px 6px;">الفرق</th></tr>';
+    pendingPdfData.items.forEach((d,idx)=>{
+      const diff=(d.myPrice-d.invoicePrice).toFixed(2);
+      const dc=parseFloat(diff)>=0?'color:var(--green)':'color:var(--red)';
+      const rb=d.isNew?'background:#fff8e6;':parseFloat(diff)<0?'background:#fff5f5;':'';
+      tableHtml+=`<tr style="${rb}">
+        <td style="padding:5px;border-bottom:1px solid var(--gray-mid);">${d.name||'<i style="color:#aaa">جديد ⚠️</i>'}</td>
+        <td style="padding:5px;border-bottom:1px solid var(--gray-mid);" dir="ltr">0${d.phone}</td>
+        <td style="padding:5px;border-bottom:1px solid var(--gray-mid);color:var(--blue);font-weight:700;">${d.myPrice} ج</td>
+        <td style="padding:5px;border-bottom:1px solid var(--gray-mid);font-weight:700;">${d.invoicePrice} ج
+          <br><input type="number" id="inv_${idx}" value="${d.invoicePrice}" style="width:75px;padding:3px;border:1.5px solid var(--gray-mid);border-radius:4px;font-size:11px;text-align:center;margin-top:2px;" min="0" step="0.01">
+        </td>
+        <td style="padding:5px;border-bottom:1px solid var(--gray-mid);font-weight:700;${dc}">${parseFloat(diff)>=0?'+':''}${diff} ج</td>
+      </tr>`;
+    });
+    tableHtml+='</table></div>';
+
+    document.getElementById('pdfPreviewTable').innerHTML=tableHtml;
+    document.getElementById('pdfPreviewCard').classList.remove('hidden');
+    document.getElementById('hdrSub').textContent='راجع الفاتورة ثم احفظ';
+
+  }catch(e){res.innerHTML=`<div class="alert-item danger">❌ خطأ: ${e.message}</div>`;console.error(e);}
+}
+
 /* ========== PDF PROCESSING (FIXED) ========== */
 function onFileChosen(inp){document.getElementById('uzTitle').textContent=inp.files[0]?.name||'اضغط لاختيار ملف PDF';}
 
@@ -1089,7 +1178,7 @@ function closeModal(){
 function toast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1d23;color:white;padding:10px 20px;border-radius:20px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);white-space:nowrap;';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
 
 /* ========== DRAG & DROP ========== */
-['uploadZone','xlsZone'].forEach(id=>{
+['uploadZone','xlsZone','invoiceXlsZone'].forEach(id=>{
   const z=document.getElementById(id); if(!z)return;
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
   z.addEventListener('dragleave',()=>z.classList.remove('drag'));
