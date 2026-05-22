@@ -1,164 +1,678 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام فودافون - معالج الإكسيل المطور</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        :root { --red: #e60000; --green: #1a9e4a; --blue: #0077cc; --text: #1a1d23; --white: #ffffff; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #f0f2f5; color: var(--text); padding-bottom: 80px; }
-        .header { background: var(--red); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; }
-        .tab-bar { display: flex; background: white; border-bottom: 1px solid #ddd; position: sticky; top: 52px; z-index: 99; }
-        .tab-btn { flex: 1; padding: 15px 5px; font-size: 13px; font-weight: 700; border: none; background: none; border-bottom: 3px solid transparent; cursor: pointer; color: #666; }
-        .tab-btn.active { color: var(--red); border-bottom-color: var(--red); background: #fff5f5; }
-        .container { padding: 15px; max-width: 1000px; margin: auto; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-right: 5px solid var(--red); }
-        .table-wrap { overflow-x: auto; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px; }
-        th { background: #f8f9fa; }
-        .upload-zone { border: 2px dashed #bbb; padding: 30px; text-align: center; border-radius: 12px; cursor: pointer; transition: 0.3s; background: #fafafa; }
-        .upload-zone:hover { border-color: var(--red); background: #fff5f5; }
-        .hidden { display: none !important; }
-        .btn-green { background: var(--green); color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; }
-        .btn-blue { background: var(--blue); color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>نظام فودافون للتحصيل</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+<style>
+:root {
+  --red:#e60000;--red-dark:#b80000;--red-light:#fff0f0;
+  --green:#1a9e4a;--green-light:#edfaf3;
+  --yellow:#f0a500;--yellow-light:#fff8e6;
+  --blue:#0077cc;--blue-light:#e8f4ff;
+  --gray:#f5f6f8;--gray-mid:#e0e3e9;--gray-dark:#6b7280;
+  --text:#1a1d23;--white:#fff;
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 2px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.13);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#eef0f5;min-height:100vh;color:var(--text);padding-bottom:80px;}
+.app-header{background:var(--red);color:white;padding:14px 18px 10px;position:sticky;top:0;z-index:200;box-shadow:0 2px 10px rgba(230,0,0,.3);display:flex;justify-content:space-between;align-items:center;}
+.app-header h1{font-size:clamp(13px,4vw,18px);font-weight:700;}
+.hdr-sub{font-size:11px;opacity:.85;margin-top:1px;}
+.tab-bar{display:flex;background:var(--white);border-top:1px solid var(--gray-mid);position:fixed;bottom:0;left:0;right:0;z-index:200;box-shadow:0 -2px 12px rgba(0,0,0,.08);}
+.tab-btn{flex:1;padding:9px 4px 7px;font-size:10px;font-weight:600;color:var(--gray-dark);background:none;border:none;border-top:3px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .18s;font-family:inherit;}
+.tab-btn .ti{font-size:19px;}
+.tab-btn.active{color:var(--red);border-top-color:var(--red);}
+.main{padding:14px;max-width:720px;margin:0 auto;}
+.card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--red);display:flex;align-items:center;gap:6px;}
+label{font-size:12px;font-weight:600;color:var(--gray-dark);display:block;margin:10px 0 4px;}
+input[type=text],input[type=number],input[type=month],select{width:100%;padding:10px 12px;border:1.5px solid var(--gray-mid);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;color:var(--text);background:var(--white);transition:border-color .2s;-webkit-appearance:none;}
+input:focus,select:focus{outline:none;border-color:var(--red);}
+.btn{width:100%;padding:11px 16px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;transition:all .18s;}
+.btn:active{transform:scale(.97);}
+.btn-red{background:var(--red);color:white;}.btn-red:hover{background:var(--red-dark);}
+.btn-green{background:var(--green);color:white;}
+.btn-blue{background:var(--blue);color:white;}
+.btn-gray{background:var(--gray);color:var(--text);}
+.btn-orange{background:#f97316;color:white;}
+.btn-sm{padding:5px 10px;font-size:12px;margin-top:0;width:auto;display:inline-flex;}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.stat-box{background:var(--gray);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;}
+.stat-val{font-size:clamp(15px,4vw,20px);font-weight:700;color:var(--red);display:block;}
+.stat-lbl{font-size:11px;color:var(--gray-dark);margin-top:3px;}
+.stat-box.green .stat-val{color:var(--green);}
+.stat-box.blue .stat-val{color:var(--blue);}
+.stat-box.yellow .stat-val{color:var(--yellow);}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gray-mid);background:var(--white);color:var(--gray-dark);cursor:pointer;transition:all .18s;white-space:nowrap;margin-top:0;width:auto;font-family:inherit;}
+.chip.active,.chip:hover{background:var(--red);color:white;border-color:var(--red);}
+.line-card{background:var(--white);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--gray-mid);}
+.line-card.paid{border-color:#86efac;background:#f0fdf4;}
+.line-card.unpaid{border-color:#fca5a5;background:#fff5f5;}
+.line-card.partial{border-color:#fcd34d;background:#fffbeb;}
+.line-card.overprice{border-color:#fbbf24;background:#fffbeb;}
+.lc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.lc-name{font-size:14px;font-weight:700;}
+.lc-phone{font-size:12px;color:var(--gray-dark);margin-top:2px;direction:ltr;text-align:right;}
+.lc-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.badge-paid{background:var(--green-light);color:var(--green);}
+.badge-unpaid{background:#fee2e2;color:var(--red);}
+.badge-partial{background:var(--yellow-light);color:var(--yellow);}
+.lc-pkg{font-size:11px;color:var(--gray-dark);margin-bottom:8px;}
+.lc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
+.ls{background:var(--gray);border-radius:6px;padding:5px 4px;text-align:center;}
+.ls-v{font-size:12px;font-weight:700;color:var(--text);}
+.ls-l{font-size:9px;color:var(--gray-dark);margin-top:1px;}
+.ls.pos .ls-v{color:var(--green);}
+.ls.neg .ls-v{color:var(--red);}
+.lc-actions{display:flex;gap:6px;}
+.lc-actions .btn{margin-top:0;flex:1;padding:8px 8px;font-size:12px;}
+.alert-item{border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.6;}
+.alert-item.danger{background:#fee2e2;border-right:4px solid var(--red);}
+.alert-item.warning{background:var(--yellow-light);border-right:4px solid var(--yellow);}
+.alert-item.success{background:var(--green-light);border-right:4px solid var(--green);}
+.alert-item.info{background:var(--blue-light);border-right:4px solid var(--blue);}
+.alert-item strong{display:block;margin-bottom:3px;}
+.a-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-top:4px;}
+.a-badge.red{background:var(--red);color:white;}
+.a-badge.orange{background:#f97316;color:white;}
+.a-badge.green{background:var(--green);color:white;}
+.a-badge.blue{background:var(--blue);color:white;}
+.upload-zone{border:2px dashed var(--gray-mid);border-radius:var(--radius);padding:26px 16px;text-align:center;cursor:pointer;position:relative;transition:all .2s;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--red);background:var(--red-light);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.uz-icon{font-size:36px;margin-bottom:8px;}
+.uz-title{font-size:14px;font-weight:700;color:var(--text);}
+.uz-sub{font-size:12px;color:var(--gray-dark);margin-top:4px;}
+.mtable-wrap{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--gray-mid);}
+.mtable{width:100%;border-collapse:collapse;font-size:13px;min-width:520px;}
+.mtable th,.mtable td{padding:9px 8px;border-bottom:1px solid var(--gray-mid);text-align:center;}
+.mtable th{background:var(--gray);font-weight:700;}
+.mtable tr:last-child td{border-bottom:none;}
+.row-g{display:flex;gap:8px;align-items:center;}
+.row-g input,.row-g select{flex:1;margin:0;}
+.row-g .btn{flex-shrink:0;margin-top:0;width:auto;padding:10px 16px;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;}
+.modal-box{background:var(--white);border-radius:var(--radius);padding:20px;width:100%;max-width:420px;box-shadow:var(--shadow-lg);}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--blue);}
+.modal-actions{display:flex;gap:8px;margin-top:14px;}
+.modal-actions .btn{margin-top:0;flex:1;}
+@media(min-width:640px){
+  .mob-only{display:none;}
+  .desk-only{display:block;}
+  .dt{width:100%;border-collapse:collapse;font-size:13px;}
+  .dt th,.dt td{padding:10px 8px;border:1px solid var(--gray-mid);text-align:center;}
+  .dt th{background:var(--red);color:white;font-weight:600;}
+  .dt tr.paid td{background:#f0fdf4;}
+  .dt tr.unpaid td{background:#fff5f5;}
+  .dt tr.partial td{background:#fffbeb;}
+  .dt tr.overprice td{background:#fffbeb;}
+}
+@media(max-width:639px){.desk-only{display:none;}}
+.hidden{display:none!important;}
+</style>
 </head>
 <body>
 
-<div class="header"><h3>نظام تحصيل فودافون (معالجة الملفات)</h3></div>
-
-<div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('settings', this)">⚙️ الإعدادات (رفع الإكسيل)</button>
-    <button class="tab-btn" onclick="switchTab('lines', this)">📋 الخطوط</button>
-    <button class="tab-btn" onclick="switchTab('alerts', this)">⚠️ التنبيهات والأرباح</button>
+<div class="app-header">
+  <div>
+    <h1>📱 نظام فودافون للتحصيل</h1>
+    <div class="hdr-sub" id="hdrSub">جاهز</div>
+  </div>
 </div>
 
-<div class="container">
-    <div id="tab-settings">
-        <div class="card">
-            <h3>📥 خطوة 1: استيراد الأسماء من الإكسيل</h3>
-            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">ارفع الملف الذي يحتوي على (الرقم، الاسم، خطة الأسعار)</p>
-            <div class="upload-zone" onclick="document.getElementById('excelFile').click()">
-                <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" hidden onchange="importExcel(this)">
-                <b>انقر هنا لاختيار ملف الإكسيل</b>
-            </div>
-            <div id="importStatus" style="margin-top:10px; font-weight:bold; color:var(--green);"></div>
-        </div>
+<div class="main">
 
-        <div class="card">
-            <h3>🗄️ المخزن الحالي (الأسماء المسجلة)</h3>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr><th>الاسم</th><th>الرقم</th><th>الخطة</th><th>حذف</th></tr>
-                    </thead>
-                    <tbody id="storeBody"></tbody>
-                </table>
-            </div>
-        </div>
+  <div id="tab-alerts">
+    <div id="alertsContainer"><div class="alert-item info">ℹ️ لا توجد فواتير بعد.</div></div>
+  </div>
+
+  <div id="tab-lines" class="hidden">
+    <div class="card" style="padding:12px 14px;">
+      <div class="row-g">
+        <input type="month" id="monthPicker">
+        <button class="btn btn-gray" onclick="loadMonth()" style="margin-top:0;">عرض</button>
+      </div>
+    </div>
+    <div class="chips">
+      <button class="chip active" onclick="setFilter('all',this)">الكل</button>
+      <button class="chip" onclick="setFilter('unpaid',this)">لم يدفع</button>
+      <button class="chip" onclick="setFilter('partial',this)">دفع جزء</button>
+      <button class="chip" onclick="setFilter('paid',this)">دفع كامل</button>
+      <button class="chip" onclick="setFilter('overprice',this)">فاتورة أعلى</button>
+    </div>
+    <div id="statsGrid" class="stats-grid hidden"></div>
+    <div id="lineCardsWrap" class="mob-only"></div>
+    <div id="desktopTblWrap" class="desk-only"></div>
+  </div>
+
+  <div id="tab-upload" class="hidden">
+    <div class="card">
+      <div class="card-title">📅 اختر الشهر</div>
+      <input type="month" id="uploadMonth">
+    </div>
+    <div class="card">
+      <div class="card-title">📄 رفع ملف الفاتورة PDF</div>
+      <div class="alert-item info" style="margin-bottom:10px;font-size:12px;">
+        💡 النظام سيستخرج <strong>الإجمالي بعد الضريبة</strong> من الفاتورة لكل خط.
+      </div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="pdfInput" accept=".pdf" onchange="onFileChosen(this)">
+        <div class="uz-icon">📄</div>
+        <div class="uz-title" id="uzTitle">اضغط لاختيار ملف PDF</div>
+        <div class="uz-sub">أو اسحب الملف هنا</div>
+      </div>
+      <button class="btn btn-red" onclick="processInvoice()">🔄 معالجة الفاتورة</button>
+    </div>
+    <div id="uploadResult"></div>
+  </div>
+
+  <div id="tab-settings" class="hidden">
+
+    <div class="card">
+      <div class="card-title">📥 استيراد من ملف إكسيل</div>
+      <div class="alert-item info" style="margin-bottom:10px;font-size:12px;">
+        📌 أعمدة مطلوبة: <strong>الرقم | الاسم | خطة الاسعار</strong><br>
+        ✦ سعرك = سعر الباقة × <strong>1.45 (+45%)</strong> تلقائياً
+      </div>
+      <div class="upload-zone" id="xlsZone">
+        <input type="file" id="xlsInput" accept=".xlsx,.xls,.csv" onchange="importExcel(this)">
+        <div class="uz-icon">📊</div>
+        <div class="uz-title" id="xlsTitle">اضغط لاختيار ملف الإكسيل</div>
+        <div class="uz-sub">أو اسحب الملف هنا</div>
+      </div>
+      <div id="xlsStatus"></div>
     </div>
 
-    <div id="tab-lines" class="hidden">
-        <div class="card">
-            <h3>📋 قائمة التحصيل</h3>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr><th>الاسم</th><th>الرقم</th><th>خطة الأسعار</th><th>سعرك (+45%)</th><th>الحالة</th></tr>
-                    </thead>
-                    <tbody id="linesBody"></tbody>
-                </table>
-            </div>
-        </div>
+    <div class="card">
+      <div class="card-title">💾 تصدير واستيراد بيانات المخزن</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-blue" onclick="exportData()" style="margin-top:0;flex:1;">📤 تصدير JSON</button>
+        <button class="btn btn-orange" onclick="document.getElementById('importFile').click()" style="margin-top:0;flex:1;">📥 استيراد JSON</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" hidden onchange="importData(this)">
     </div>
 
-    <div id="tab-alerts" class="hidden">
-        <div class="card">
-            <h3>⚠️ المبالغ المتبقية</h3>
-            <div id="alertsList"></div>
-        </div>
+    <div class="card">
+      <div class="card-title">📋 الخطوط المسجلة (<span id="linesCount">0</span>)</div>
+      <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم أو الرقم..." oninput="renderManageTable()" style="margin-bottom:10px;">
+      <div class="mtable-wrap">
+        <table class="mtable">
+          <thead>
+            <tr><th>الاسم</th><th>الرقم</th><th>خطة الأسعار</th><th>سعر الباقة</th><th>سعرك (+45%)</th><th>إجراء</th></tr>
+          </thead>
+          <tbody id="manageBody"></tbody>
+        </table>
+      </div>
     </div>
+
+    <div class="card">
+      <div class="card-title">➕ إضافة خط جديد</div>
+      <label>الاسم</label>
+      <input type="text" id="addName" placeholder="مثال: فتحي صابر">
+      <label>الرقم (بدون صفر)</label>
+      <input type="text" id="addPhone" placeholder="مثال: 1009111258">
+      <label>خطة الأسعار</label>
+      <input type="text" id="addPkg" placeholder="مثال: Flex 52 Revamp">
+      <label>سعر الباقة (الأساسي بدون ضريبة)</label>
+      <input type="number" id="addBase" placeholder="مثال: 52" oninput="calcAddPreview()">
+      <div id="addPreview" style="font-size:13px;color:var(--green);margin-top:6px;font-weight:700;"></div>
+      <button class="btn btn-green" onclick="addLine()">➕ إضافة الخط</button>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('alerts',this)"><span class="ti">⚠️</span>التنبيهات</button>
+  <button class="tab-btn" onclick="showTab('lines',this)"><span class="ti">📋</span>الخطوط</button>
+  <button class="tab-btn" onclick="showTab('upload',this)"><span class="ti">📎</span>رفع فاتورة</button>
+  <button class="tab-btn" onclick="showTab('settings',this)"><span class="ti">⚙️</span>الإعدادات</button>
+</div>
+
+<div id="editModal" class="modal-bg hidden">
+  <div class="modal-box">
+    <div class="modal-title">✏️ تعديل بيانات الخط</div>
+    <input type="hidden" id="editOldPhone">
+    <label>الاسم</label><input type="text" id="editName">
+    <label>الرقم (بدون صفر)</label><input type="text" id="editPhone">
+    <label>خطة الأسعار</label><input type="text" id="editPkg">
+    <label>سعر الباقة (الأساسي)</label>
+    <input type="number" id="editBase" oninput="calcEditPreview()">
+    <div id="editPreview" style="font-size:13px;color:var(--green);margin-top:6px;font-weight:700;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-blue" onclick="submitEdit()">💾 حفظ</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<div id="partialModal" class="modal-bg hidden">
+  <div class="modal-box">
+    <div class="modal-title">💵 تسجيل دفعة جزئية</div>
+    <input type="hidden" id="partialPhone">
+    <label id="partialLabel">المبلغ المدفوع</label>
+    <input type="number" id="partialAmount" placeholder="أدخل المبلغ">
+    <div id="partialInfo" style="font-size:12px;color:var(--gray-dark);margin-top:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="submitPartial()">✅ حفظ</button>
+      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
 </div>
 
 <script>
-    let store = JSON.parse(localStorage.getItem('voda_store')) || {};
-    let monthsData = JSON.parse(localStorage.getItem('voda_months')) || {};
+const KEY_N='vf_names3', KEY_M='vf_months3';
+let gN={}, gM={}, curData=[], curFilter='all', curMonth='';
 
-    function switchTab(t, b) {
-        document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
-        document.getElementById(`tab-${t}`).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        b.classList.add('active');
-        if(t === 'settings') renderStore();
-        if(t === 'lines') renderLines();
+function saveN(){localStorage.setItem(KEY_N,JSON.stringify(gN));}
+function saveM(){localStorage.setItem(KEY_M,JSON.stringify(gM));}
+
+function boot(){
+  const sn=localStorage.getItem(KEY_N), sm=localStorage.getItem(KEY_M);
+  if(sn) gN=JSON.parse(sn);
+  if(sm) gM=JSON.parse(sm);
+  if(!Object.keys(gN).length) loadBuiltIn();
+  const now=new Date();
+  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('monthPicker').value=ym;
+  document.getElementById('uploadMonth').value=ym;
+  curMonth=ym;
+  renderManageTable();
+  generateAlerts();
+}
+
+function loadBuiltIn(){
+  const rows=[
+    ["فتحي صابر1","1009111258","Flex 52 Revamp",52],
+    ["الليثى","1050465564","2025 Business Flex 100",100],
+    ["نادر","1000238985","Flex 52 Revamp",52],
+    ["ايمن جمال","1050558655","Flex 90 Revamp",90],
+    ["محمد مامون ابوزيد","1010739900","Flex 125 Revamp",125],
+    ["عبدالرحمن عصام عبدالصادق","1018388851","2025 Business Flex 150",150],
+    ["تبع مصطفى غياتى","1050688570","Flex 45 Revamp",45],
+    ["يحيوح","1010264510","2025 Business Flex 100",100],
+    ["تبع احمد بدوى","1021322203","Flex 60 Revamp",60],
+    ["احمد حمزه","1007333768","Flex 45 Revamp",45],
+    ["ا/سيد عزت","1016801100","Flex 90 Revamp",90],
+    ["ميشو ورشه","1015175656","Flex 52 Revamp",52],
+    ["السيد عزت","1007013337","Flex 45 Revamp",45],
+    ["السيد عزت","1092516665","Flex 45 Revamp",45],
+    ["عبدالمنعم سواق شركه البنا","1067611005","Flex 52 Revamp",52],
+    ["محمد عبدالعزيز البحلس","1065557029","Flex 52 Revamp",52],
+    ["تبع احمد بدوى","1050465563","Flex 45 Revamp",45],
+    ["احمد فتحى سواق شركه البنا","1003141532","Flex 52 Revamp",52],
+    ["احمد فتحي السوا","1065374761","Flex 52 Revamp",52],
+    ["مصطفى الخشن شركة سانتانا","1007220513","Flex 60 Revamp",60],
+    ["محمد صلاح","1025038673","Flex 52 Revamp",52],
+    ["ام كريم","1015841683","Free SPOC Flex45",0],
+    ["تبع مصطفى غياتى","1050558644","Flex 45 Revamp",45],
+    ["فتحي مرور١","1004222561","Flex 52 Revamp",52],
+    ["عبد الحليم القط","1096394643","Flex 60 Revamp",60],
+    ["زياد ايمن جمال","1024108881","Flex 45 Revamp",45],
+    ["حافظ","1099455810","Flex 52 Revamp",52],
+    ["تبع وليد شركه البنا","1064650797","Flex 52 Revamp",52],
+    ["م ابهاب سانتانا","100421567","Flex 52 Revamp",52],
+    ["الشيخ محمد قابيل","1030711153","Flex 52 Revamp",52],
+    ["عادل البسمى","1001036282","Flex 45 Revamp",45],
+    ["مروة صابر","1098163775","Flex 45 Revamp",45],
+    ["محمد ميشو 2","1004222529","Flex 52 Revamp",52],
+    ["Ahmed Bdway","1065705181","Flex 52 Revamp",52],
+    ["تبع دياب الجبالى","1000538640","Flex 60 Revamp",60],
+    ["دياب الجبالي","1066634120","Flex 60 Revamp",60],
+    ["تبع ابراهيم بدوى","1061751403","Flex 52 Revamp",52],
+    ["ابراهيم بدوى فليكس 35","1019193512","Flex 52 Revamp",52],
+    ["احمد فتحى /حماته","1093477613","Flex 52 Revamp",52],
+    ["اسلام تبع احمد فتحى","1033304165","Flex 45 Revamp",45],
+    ["اسامه زبون حساب رافت","1099969075","Flex 52 Revamp",52],
+    ["عبدالغفار الكردى","1026273197","Flex 60 Revamp",60],
+    ["شهد تبع احمد بدوى","1030711109","Flex 45 Revamp",45],
+    ["ا/ هاني واجيه","1007248818","Flex 60 Revamp",60],
+    ["تبع مامون 2","1000633592","Flex 52 Revamp",52],
+    ["تبع مامون","1015552540","Flex 52 Revamp",52],
+    ["تبع مامون 3","1020230404","Flex 52 Revamp",52],
+    ["تبع مخمد جمال","1020360204","2022 Business Flex 65",65],
+    ["ابراهيم بدوى /3","1060042358","Flex 52 Revamp",52],
+    ["محمد جمال سواق شركه البنا","1044426950","2022 Business Flex 65",65],
+    ["تبع محمد مامون","1011161876","Flex 90 Revamp",90],
+    ["تبع يحيى الحبالى","1017622001","Flex 45 Revamp",45],
+    ["عمرو غريب","1017612200","Flex 45 Revamp",45],
+    ["الاكس عمر و غريب","1017632200","Flex 45 Revamp",45],
+    ["عصام عبدالصادق سواق شركة البنا","1094945069","Flex 52 Revamp",52],
+    ["عربيه اشرف خشبه","1017622008","Flex 45 Revamp",45],
+    ["تبع خالد ابو النجا","1062888950","Flex 45 Revamp",45],
+    ["تبع احمد بدوى","1003284165","Flex 45 Revamp",45],
+    ["تبع يحيى الجبالى فليكس 30","1004045779","2025 Business Flex 70",70]
+  ];
+  rows.forEach(r=>{const b=r[3];gN[r[1]]={name:r[0],packageType:r[2],basePrice:b,myPrice:parseFloat((b*1.45).toFixed(2))};});
+  saveN();
+}
+
+function showTab(t,el){
+  ['alerts','lines','upload','settings'].forEach(id=>document.getElementById('tab-'+id).classList.add('hidden'));
+  document.getElementById('tab-'+t).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(t==='lines') loadMonth();
+  if(t==='settings') renderManageTable();
+  if(t==='alerts') generateAlerts();
+}
+
+function importExcel(inp){
+  const file=inp.files[0]; if(!file) return;
+  document.getElementById('xlsTitle').textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){document.getElementById('xlsStatus').innerHTML='<div class="alert-item danger">❌ الملف فارغ</div>';return;}
+      const keys=Object.keys(rows[0]);
+      const colPh  =keys.find(k=>k.includes('الرقم')||k.toLowerCase().includes('phone'))||null;
+      const colName=keys.find(k=>k.includes('الاسم')||k.toLowerCase().includes('name'))||null;
+      const colPlan=keys.find(k=>k.includes('خطة')||k.includes('خطه')||k.includes('الباقة')||k.toLowerCase().includes('plan'))||null;
+      if(!colPh||!colName){document.getElementById('xlsStatus').innerHTML='<div class="alert-item danger">❌ لم أجد عمود الرقم أو الاسم</div>';return;}
+      let count=0;
+      rows.forEach(row=>{
+        const ph=String(row[colPh]||'').trim().replace(/^0+/,'');
+        const name=String(row[colName]||'').trim();
+        const plan=colPlan?String(row[colPlan]||'').trim():'';
+        if(!ph) return;
+        const nums=(plan.match(/\b(\d{2,3})\b/g)||[]).filter(n=>!(n.length===4&&n.startsWith('20')));
+        const base=nums.length?parseFloat(nums[nums.length-1]):0;
+        gN[ph]={name,packageType:plan,basePrice:base,myPrice:parseFloat((base*1.45).toFixed(2))};
+        count++;
+      });
+      saveN(); renderManageTable();
+      document.getElementById('xlsStatus').innerHTML=`<div class="alert-item success">✅ تم استيراد ${count} خط — سعرك = الباقة × 1.45</div>`;
+      toast('✅ تم استيراد '+count+' خط');
+    }catch(err){document.getElementById('xlsStatus').innerHTML='<div class="alert-item danger">❌ خطأ: '+err.message+'</div>';}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function exportData(){
+  const data={names:gN,months:gM,exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  const d=new Date(); a.download='vodafone_backup_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.json';
+  a.click(); toast('📤 تم تصدير البيانات');
+}
+function importData(inp){
+  const file=inp.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.names){toast('❌ ملف غير صالح');return;}
+      if(!confirm('استيراد '+Object.keys(data.names).length+' خط؟ سيستبدل البيانات الحالية.')) return;
+      gN=data.names; gM=data.months||{};
+      saveN(); saveM(); renderManageTable(); generateAlerts();
+      toast('✅ تم استيراد البيانات');
+    }catch(e){toast('❌ خطأ في قراءة الملف');}
+  };
+  r.readAsText(file); inp.value='';
+}
+
+function renderManageTable(){
+  const term=document.getElementById('searchInput').value.trim().toLowerCase();
+  const tbody=document.getElementById('manageBody');
+  tbody.innerHTML=''; let count=0;
+  for(let ph in gN){
+    const d=gN[ph];
+    if(term && !d.name.toLowerCase().includes(term) && !ph.includes(term)) continue;
+    count++;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><b>${d.name||'<i style="color:#aaa">بدون اسم</i>'}</b></td>
+      <td dir="ltr" style="font-size:12px;">0${ph}</td>
+      <td style="font-size:11px;">${d.packageType}</td>
+      <td style="color:var(--blue);font-weight:600;">${d.basePrice} ج</td>
+      <td style="color:var(--green);font-weight:700;">${d.myPrice} ج</td>
+      <td>
+        <button class="btn btn-blue btn-sm" onclick="openEdit('${ph}')">✏️</button>
+        <button class="btn btn-red btn-sm" style="margin-right:3px;" onclick="deleteLine('${ph}')">🗑️</button>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+  if(!count) tbody.innerHTML='<tr><td colspan="6" style="padding:20px;color:var(--gray-dark);">لا توجد نتائج</td></tr>';
+  document.getElementById('linesCount').textContent=Object.keys(gN).length;
+}
+
+function calcAddPreview(){const b=parseFloat(document.getElementById('addBase').value)||0;document.getElementById('addPreview').textContent=b?'سعرك = '+parseFloat((b*1.45).toFixed(2))+' ج':'';}
+function calcEditPreview(){const b=parseFloat(document.getElementById('editBase').value)||0;document.getElementById('editPreview').textContent=b?'سعرك = '+parseFloat((b*1.45).toFixed(2))+' ج':'';}
+
+function addLine(){
+  const name=document.getElementById('addName').value.trim();
+  const ph=document.getElementById('addPhone').value.trim().replace(/^0+/,'');
+  const pkg=document.getElementById('addPkg').value.trim();
+  const base=parseFloat(document.getElementById('addBase').value)||0;
+  if(!name||!ph){toast('⚠️ يرجى ملء الاسم والرقم');return;}
+  gN[ph]={name,packageType:pkg,basePrice:base,myPrice:parseFloat((base*1.45).toFixed(2))};
+  saveN();
+  ['addName','addPhone','addPkg','addBase'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('addPreview').textContent='';
+  renderManageTable(); toast('✅ تم إضافة الخط');
+}
+
+function openEdit(ph){
+  const d=gN[ph];
+  document.getElementById('editOldPhone').value=ph;
+  document.getElementById('editName').value=d.name;
+  document.getElementById('editPhone').value='0'+ph;
+  document.getElementById('editPkg').value=d.packageType;
+  document.getElementById('editBase').value=d.basePrice;
+  document.getElementById('editPreview').textContent=d.basePrice?'سعرك = '+d.myPrice+' ج':'';
+  document.getElementById('editModal').classList.remove('hidden');
+}
+function submitEdit(){
+  const oldPh=document.getElementById('editOldPhone').value;
+  const name=document.getElementById('editName').value.trim();
+  const ph=document.getElementById('editPhone').value.trim().replace(/^0+/,'');
+  const pkg=document.getElementById('editPkg').value.trim();
+  const base=parseFloat(document.getElementById('editBase').value)||0;
+  if(!name||!ph){toast('⚠️ يرجى ملء الاسم والرقم');return;}
+  if(oldPh!==ph) delete gN[oldPh];
+  gN[ph]={name,packageType:pkg,basePrice:base,myPrice:parseFloat((base*1.45).toFixed(2))};
+  saveN(); closeModal(); renderManageTable(); toast('✅ تم التعديل');
+}
+function deleteLine(ph){
+  if(!confirm('حذف: '+(gN[ph]?.name||ph)+'؟')) return;
+  delete gN[ph]; saveN(); renderManageTable(); toast('🗑️ تم الحذف');
+}
+
+function onFileChosen(inp){document.getElementById('uzTitle').textContent=inp.files[0]?.name||'اضغط لاختيار ملف PDF';}
+
+async function processInvoice(){
+  const fi=document.getElementById('pdfInput');
+  const month=document.getElementById('uploadMonth').value;
+  if(!fi.files.length){toast('⚠️ يرجى اختيار ملف PDF');return;}
+  if(!month){toast('⚠️ يرجى اختيار الشهر');return;}
+  const res=document.getElementById('uploadResult');
+  res.innerHTML='<div class="alert-item info">⏳ جاري قراءة الفاتورة…</div>';
+  try{
+    const buf=await fi.files[0].arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let text='';
+    for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();text+=tc.items.map(it=>it.str).join(' ')+' ';}
+    const tokens=text.split(/\s+/);
+    const found=new Map();
+    for(let i=0;i<tokens.length;i++){
+      if(/^1[0-9]{9}$/.test(tokens[i])){
+        const ph=tokens[i]; if(found.has(ph)) continue;
+        let inv=0;
+        for(let o=1;o<=8;o++){const nx=tokens[i+o];if(nx&&/^[0-9]+(\.[0-9]{1,2})?$/.test(nx)){const v=parseFloat(nx);if(v>=5&&v<=2000){inv=v;break;}}}
+        found.set(ph,inv);
+      }
     }
-
-    // --- دالة استيراد الإكسيل المطورة ---
-    function importExcel(input) {
-        const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(sheet);
-
-            let count = 0;
-            json.forEach(row => {
-                // محاولة إيجاد الأعمدة بأي مسمى قريب (الرقم أو الرقم أو phone)
-                let ph = row['الرقم'] || row['رقم الخط'] || row['phone'] || row['الرقم '];
-                let name = row['الاسم'] || row['اسم العميل'] || row['name'] || row['الاسم'];
-                let plan = row['خطة الاسعار'] || row['الباقة'] || row['plan'] || row['خطة الاسعار'];
-
-                if(ph) {
-                    let cleanPh = String(ph).trim().replace(/^0+/, ''); // تنظيف الرقم
-                    store[cleanPh] = {
-                        name: name || "بدون اسم",
-                        plan: plan || "غير محدد"
-                    };
-                    count++;
-                }
-            });
-
-            localStorage.setItem('voda_store', JSON.stringify(store));
-            document.getElementById('importStatus').innerText = `✅ تم استيراد ${count} اسم بنجاح!`;
-            renderStore();
-        };
-        reader.readAsArrayBuffer(file);
+    if(!found.size){res.innerHTML='<div class="alert-item warning">⚠️ لم يتم العثور على أرقام خطوط.</div>';return;}
+    let newCount=0;
+    const monthData=[];
+    for(let[ph,inv] of found.entries()){
+      if(!gN[ph]){gN[ph]={name:'',packageType:'غير معروف',basePrice:0,myPrice:0};newCount++;}
+      const c=gN[ph];
+      monthData.push({phone:ph,name:c.name,myPrice:c.myPrice,invoicePrice:inv,packageType:c.packageType,paid:false,paidAmount:0});
     }
+    if(newCount){saveN();renderManageTable();}
+    gM[month]=monthData; saveM();
+    res.innerHTML=`<div class="alert-item success">✅ تم حفظ فاتورة <strong>${month}</strong> (${monthData.length} خط)<br>${newCount?'<span class="a-badge orange">⚠️ '+newCount+' رقم جديد — أضف أسماءهم من الإعدادات</span>':'<span class="a-badge green">✅ كل الأرقام معروفة</span>'}</div>`;
+    document.getElementById('hdrSub').textContent='آخر فاتورة: '+month;
+    generateAlerts();
+  }catch(e){res.innerHTML='<div class="alert-item danger">❌ خطأ: '+e.message+'</div>';}
+}
 
-    function renderStore() {
-        const body = document.getElementById('storeBody');
-        body.innerHTML = "";
-        for(let ph in store) {
-            body.innerHTML += `<tr>
-                <td><b>${store[ph].name}</b></td>
-                <td>0${ph}</td>
-                <td>${store[ph].plan}</td>
-                <td><button onclick="deleteFromStore('${ph}')" style="color:red; background:none; border:none; cursor:pointer;">❌</button></td>
-            </tr>`;
-        }
-    }
+function loadMonth(){
+  const m=document.getElementById('monthPicker').value; curMonth=m;
+  curData=gM[m]?JSON.parse(JSON.stringify(gM[m])):[];
+  curData.forEach(d=>{if(gN[d.phone]){d.name=gN[d.phone].name;d.myPrice=gN[d.phone].myPrice;d.packageType=gN[d.phone].packageType;}});
+  renderLines(); renderStats();
+}
 
-    function deleteFromStore(ph) {
-        delete store[ph];
-        localStorage.setItem('voda_store', JSON.stringify(store));
-        renderStore();
-    }
+function setFilter(f,el){
+  curFilter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderLines();
+}
 
-    function renderLines() {
-        const body = document.getElementById('linesBody');
-        body.innerHTML = "<tr><td colspan='5'>يرجى رفع فاتورة PDF أولاً لربط المبالغ بالأسماء</td></tr>";
-        // هنا يتم استكمال منطق عرض الخطوط المربوطة بالفاتورة كما في الأكواد السابقة
-    }
+function renderLines(){
+  let data=[...curData];
+  if(curFilter==='paid') data=data.filter(d=>d.paid&&d.paidAmount>=d.myPrice);
+  if(curFilter==='partial') data=data.filter(d=>!d.paid&&d.paidAmount>0);
+  if(curFilter==='unpaid') data=data.filter(d=>!d.paid&&(!d.paidAmount||d.paidAmount===0));
+  if(curFilter==='overprice') data=data.filter(d=>d.invoicePrice>d.myPrice);
+  const cw=document.getElementById('lineCardsWrap'), dw=document.getElementById('desktopTblWrap');
+  if(!data.length){cw.innerHTML='<div class="alert-item info">لا توجد بيانات.</div>';dw.innerHTML='';return;}
+  let cards='';
+  for(let d of data){
+    const rem=Math.max(0,d.myPrice-(d.paidAmount||0));
+    const diff=d.myPrice-d.invoicePrice;
+    const isPaid=d.paid&&d.paidAmount>=d.myPrice;
+    const isP=!isPaid&&d.paidAmount>0;
+    const cc=d.invoicePrice>d.myPrice?'overprice':isPaid?'paid':isP?'partial':'unpaid';
+    const bc=isPaid?'badge-paid':isP?'badge-partial':'badge-unpaid';
+    const bt=isPaid?'✅ دفع كامل':isP?'💛 جزئي ('+d.paidAmount+' ج)':'❌ لم يدفع';
+    const nm=d.name||'<i style="color:var(--gray-dark);font-size:12px;">بدون اسم</i>';
+    cards+=`<div class="line-card ${cc}">
+      <div class="lc-top"><div><div class="lc-name">${nm}</div><div class="lc-phone">0${d.phone}</div></div><span class="lc-badge ${bc}">${bt}</span></div>
+      <div class="lc-pkg">📦 ${d.packageType}</div>
+      <div class="lc-stats">
+        <div class="ls"><div class="ls-v">${d.myPrice}</div><div class="ls-l">سعرك</div></div>
+        <div class="ls"><div class="ls-v">${d.invoicePrice}</div><div class="ls-l">الفاتورة</div></div>
+        <div class="ls ${diff>=0?'pos':'neg'}"><div class="ls-v">${diff.toFixed(1)}</div><div class="ls-l">الفرق</div></div>
+        <div class="ls"><div class="ls-v">${rem}</div><div class="ls-l">متبقي</div></div>
+      </div>
+      <div class="lc-actions">${isPaid
+        ?'<button class="btn btn-gray" onclick="cancelPay(\''+d.phone+'\')">↩️ إلغاء الدفع</button>'
+        :'<button class="btn btn-green" onclick="fullPay(\''+d.phone+'\')">💰 دفع كامل</button><button class="btn btn-gray" onclick="openPartial(\''+d.phone+'\')">💵 دفع جزئي</button>'
+      }</div>
+    </div>`;
+  }
+  cw.innerHTML=cards;
+  let rows='';
+  for(let d of data){
+    const rem=Math.max(0,d.myPrice-(d.paidAmount||0));
+    const diff=d.myPrice-d.invoicePrice;
+    const isPaid=d.paid&&d.paidAmount>=d.myPrice;
+    const isP=!isPaid&&d.paidAmount>0;
+    const rc=d.invoicePrice>d.myPrice?'overprice':isPaid?'paid':isP?'partial':'unpaid';
+    const st=isPaid?'✅ دفع':isP?'💛 جزئي('+d.paidAmount+')':'❌ لم يدفع';
+    const nm=d.name||'<i style="color:#aaa">بدون اسم</i>';
+    rows+=`<tr class="${rc}"><td><b>${nm}</b></td><td dir="ltr">0${d.phone}</td><td>${d.packageType}</td>
+      <td>${d.myPrice}</td><td>${d.invoicePrice}</td>
+      <td style="${diff>=0?'color:var(--green)':'color:var(--red)'}">${diff.toFixed(1)}</td>
+      <td>${rem}</td><td>${st}</td>
+      <td>${isPaid
+        ?'<button class="btn btn-gray btn-sm" onclick="cancelPay(\''+d.phone+'\')">↩️</button>'
+        :'<button class="btn btn-green btn-sm" onclick="fullPay(\''+d.phone+'\')">💰</button><button class="btn btn-gray btn-sm" onclick="openPartial(\''+d.phone+'\')">💵</button>'
+      }</td></tr>`;
+  }
+  dw.innerHTML='<div style="overflow-x:auto"><table class="dt"><tr><th>الاسم</th><th>الرقم</th><th>الباقة</th><th>سعرك</th><th>الفاتورة</th><th>الفرق</th><th>متبقي</th><th>الحالة</th><th>إجراء</th></tr>'+rows+'</table></div>';
+}
 
-    // التشغيل الأولي
-    renderStore();
+function renderStats(){
+  const g=document.getElementById('statsGrid');
+  if(!curData.length){g.classList.add('hidden');return;}
+  const tI=curData.reduce((s,d)=>s+d.invoicePrice,0);
+  const tM=curData.reduce((s,d)=>s+d.myPrice,0);
+  const tC=curData.reduce((s,d)=>s+(d.paidAmount||0),0);
+  const tL=tM-tC, tP=tM-tI;
+  g.innerHTML=`
+    <div class="stat-box"><span class="stat-val">${tI.toFixed(0)} ج</span><div class="stat-lbl">طلب فودافون</div></div>
+    <div class="stat-box blue"><span class="stat-val">${tM.toFixed(0)} ج</span><div class="stat-lbl">تحصيلك الكلي</div></div>
+    <div class="stat-box green"><span class="stat-val">${tP.toFixed(0)} ج</span><div class="stat-lbl">أرباحك</div></div>
+    <div class="stat-box green"><span class="stat-val">${tC.toFixed(0)} ج</span><div class="stat-lbl">تم تحصيله</div></div>
+    <div class="stat-box yellow"><span class="stat-val">${tL.toFixed(0)} ج</span><div class="stat-lbl">متبقي بالخارج</div></div>
+    <div class="stat-box"><span class="stat-val">${curData.filter(d=>d.paid).length}/${curData.length}</span><div class="stat-lbl">الخطوط المسددة</div></div>`;
+  g.classList.remove('hidden');
+}
+
+function saveCur(){gM[curMonth]=curData;saveM();renderLines();renderStats();generateAlerts();}
+function fullPay(ph){const i=curData.findIndex(d=>d.phone===ph);if(i===-1)return;curData[i].paid=true;curData[i].paidAmount=curData[i].myPrice;saveCur();}
+function cancelPay(ph){const i=curData.findIndex(d=>d.phone===ph);if(i===-1)return;curData[i].paid=false;curData[i].paidAmount=0;saveCur();}
+function openPartial(ph){
+  const d=curData.find(d=>d.phone===ph);
+  document.getElementById('partialPhone').value=ph;
+  document.getElementById('partialLabel').textContent='المبلغ المدفوع (سعرك: '+d.myPrice+' ج)';
+  document.getElementById('partialAmount').value=d.paidAmount||'';
+  document.getElementById('partialInfo').textContent='المتبقي: '+Math.max(0,d.myPrice-(d.paidAmount||0))+' ج';
+  document.getElementById('partialModal').classList.remove('hidden');
+}
+function submitPartial(){
+  const ph=document.getElementById('partialPhone').value;
+  const amt=parseFloat(document.getElementById('partialAmount').value)||0;
+  const i=curData.findIndex(d=>d.phone===ph);if(i===-1)return;
+  curData[i].paidAmount=amt;curData[i].paid=amt>=curData[i].myPrice;
+  closeModal();saveCur();
+}
+
+function generateAlerts(){
+  const months=Object.keys(gM).sort().reverse();
+  let html='';
+  if(!months.length){document.getElementById('alertsContainer').innerHTML='<div class="alert-item info">ℹ️ لا توجد فواتير بعد.</div>';return;}
+  const noName=Object.entries(gN).filter(([,d])=>!d.name||!d.name.trim());
+  if(noName.length){
+    html+='<div class="card"><div class="card-title">⚠️ خطوط بدون اسم ('+noName.length+')</div>';
+    noName.forEach(([ph,d])=>{html+='<div class="alert-item warning"><strong>0'+ph+'</strong>'+d.packageType+' | سعر الباقة: '+d.basePrice+' ج | سعرك: '+d.myPrice+' ج<span class="a-badge orange">بدون اسم — أضف من الإعدادات</span></div>';});
+    html+='</div>';
+  }
+  const over=[];
+  months.forEach(m=>gM[m].forEach(d=>{if(d.invoicePrice>d.myPrice) over.push({...d,month:m});}));
+  html+='<div class="card"><div class="card-title">📈 فواتير أعلى من المتفق عليه</div>';
+  if(over.length){over.forEach(d=>{html+='<div class="alert-item warning"><strong>'+(d.name||'بدون اسم')+' (0'+d.phone+') — '+d.month+'</strong>سعرك: '+d.myPrice+' ج | الفاتورة: '+d.invoicePrice+' ج<span class="a-badge orange">زيادة '+(d.invoicePrice-d.myPrice).toFixed(1)+' ج</span></div>';});}
+  else{html+='<div class="alert-item success">✅ كل الفواتير مطابقة أو أقل.</div>';}
+  html+='</div>';
+  const dMap=new Map();
+  months.forEach(m=>{gM[m].forEach(d=>{if(!d.paid&&d.myPrice>0){if(!dMap.has(d.phone))dMap.set(d.phone,{name:d.name||'بدون اسم',phone:d.phone,months:[],debt:0,paid:0});const e=dMap.get(d.phone);e.months.push(m);e.debt+=d.myPrice;e.paid+=(d.paidAmount||0);}});});
+  html+='<div class="card"><div class="card-title">💰 المتأخرات</div>';
+  let hasD=false;
+  for(let[,e] of dMap){if(!e.months.length)continue;hasD=true;const rem=(e.debt-e.paid).toFixed(0);html+='<div class="alert-item danger"><strong>'+e.name+' (0'+e.phone+')</strong>متأخر '+e.months.length+' شهر: '+e.months.join(', ')+'<br><span class="a-badge '+(e.months.length>=3?'red':'orange')+'">إجمالي المديونية: '+rem+' ج</span></div>';}
+  if(!hasD) html+='<div class="alert-item success">✅ تم تحصيل كل المستحقات!</div>';
+  html+='</div>';
+  document.getElementById('alertsContainer').innerHTML=html;
+}
+
+function closeModal(){document.getElementById('editModal').classList.add('hidden');document.getElementById('partialModal').classList.add('hidden');}
+function toast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1d23;color:white;padding:10px 20px;border-radius:20px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);white-space:nowrap;';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+
+['uploadZone','xlsZone'].forEach(id=>{
+  const z=document.getElementById(id); if(!z)return;
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');const inp=z.querySelector('input[type=file]');if(e.dataTransfer.files.length&&inp){Object.defineProperty(inp,'files',{value:e.dataTransfer.files,configurable:true});inp.dispatchEvent(new Event('change'));}});
+});
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeModal();}));
+
+boot();
 </script>
 </body>
 </html>
