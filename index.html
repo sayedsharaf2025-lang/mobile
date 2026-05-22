@@ -1166,13 +1166,37 @@ async function processInvoiceExcel(){
 
     if(!found.size){res.innerHTML='<div class="alert-item warning">⚠️ لم يتم العثور على بيانات. تأكد من اختيار ملف فاتورة فودافون الصحيح.</div>';return;}
 
-    pendingPdfData={month,items:[]};
+    // التحقق من كل رقم منفرداً — اللي اترفع قبل كده يتخطى
+    const existingMonth=gM[month]||[];
+    const alreadyUploaded=new Set(existingMonth.map(e=>e.phone));
+
+    const newItems=[], skippedItems=[];
     for(let[ph,inv] of found.entries()){
       const c=gN[ph]||{name:'',packageType:'غير معروف',myPrice:0};
-      pendingPdfData.items.push({phone:ph,name:c.name,myPrice:c.myPrice,invoicePrice:inv,packageType:c.packageType,isNew:!gN[ph]});
+      if(alreadyUploaded.has(ph)){
+        skippedItems.push({phone:ph,name:c.name});
+      } else {
+        newItems.push({phone:ph,name:c.name,myPrice:c.myPrice,invoicePrice:inv,packageType:c.packageType,isNew:!gN[ph]});
+      }
     }
 
-    res.innerHTML=`<div class="alert-item success">✅ تم العثور على <strong>${found.size}</strong> خط — راجع المبالغ أدناه قبل الحفظ.</div>`;
+    if(!newItems.length){
+      let skipHtml='<div class="alert-item warning">⚠️ كل الأرقام في هذا الشهر مرفوعة بالفعل:<br><ul style="margin:8px 0 0 0;padding-right:16px;font-size:12px;">';
+      skippedItems.forEach(s=>{ skipHtml+=`<li>0${s.phone} ${s.name?'— '+s.name:''}</li>`; });
+      skipHtml+='</ul></div>';
+      res.innerHTML=skipHtml;
+      return;
+    }
+
+    pendingPdfData={month,items:newItems};
+
+    let statusHtml=`<div class="alert-item success">✅ تم العثور على <strong>${found.size}</strong> خط — جديد: <strong>${newItems.length}</strong>`;
+    if(skippedItems.length){
+      statusHtml+=` | <span style="color:var(--yellow);font-weight:700;">⚠️ ${skippedItems.length} مرفوع مسبقاً (تم تخطيه)</span>`;
+      statusHtml+=`<div style="margin-top:6px;font-size:11px;color:var(--gray-dark);">الأرقام المتخطاة: `+skippedItems.map(s=>`<b>0${s.phone}</b>`).join('، ')+'</div>';
+    }
+    statusHtml+=` — راجع المبالغ أدناه قبل الحفظ.</div>`;
+    res.innerHTML=statusHtml;
 
     let tableHtml='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:400px;">';
     tableHtml+='<tr><th style="background:var(--red);color:white;padding:7px 6px;">الاسم</th><th style="background:var(--red);color:white;padding:7px 6px;">الرقم</th><th style="background:var(--red);color:white;padding:7px 6px;">سعرك</th><th style="background:var(--red);color:white;padding:7px 6px;">فاتورة فودافون</th><th style="background:var(--red);color:white;padding:7px 6px;">الفرق</th></tr>';
@@ -1295,14 +1319,30 @@ async function processInvoice(){
 
     if(!found.size){res.innerHTML='<div class="alert-item warning">⚠️ لم يتم العثور على أرقام خطوط.</div>';return;}
 
-    // Build preview data
-    pendingPdfData={month, items:[]};
+    // التحقق من كل رقم منفرداً
+    const existingMonthP=gM[month]||[];
+    const alreadyUploadedP=new Set(existingMonthP.map(e=>e.phone));
+    const newItemsP=[], skippedItemsP=[];
     for(let[ph,inv] of found.entries()){
       const c=gN[ph]||{name:'',packageType:'غير معروف',myPrice:0};
-      pendingPdfData.items.push({phone:ph,name:c.name,myPrice:c.myPrice,invoicePrice:inv,packageType:c.packageType,isNew:!gN[ph]});
+      if(alreadyUploadedP.has(ph)){
+        skippedItemsP.push({phone:ph,name:c.name});
+      } else {
+        newItemsP.push({phone:ph,name:c.name,myPrice:c.myPrice,invoicePrice:inv,packageType:c.packageType,isNew:!gN[ph]});
+      }
     }
+    if(!newItemsP.length){
+      let skipHtml='<div class="alert-item warning">⚠️ كل الأرقام مرفوعة بالفعل لهذا الشهر.<br><ul style="margin:8px 0 0 0;padding-right:16px;font-size:12px;">';
+      skippedItemsP.forEach(s=>{ skipHtml+=`<li>0${s.phone} ${s.name?'— '+s.name:''}</li>`; });
+      skipHtml+='</ul></div>';
+      res.innerHTML=skipHtml; return;
+    }
+    pendingPdfData={month, items:newItemsP};
 
-    res.innerHTML=`<div class="alert-item success">✅ تم العثور على <strong>${found.size}</strong> خط — راجع المبالغ أدناه قبل الحفظ.</div>`;
+    let statusHtmlP=`<div class="alert-item success">✅ تم العثور على <strong>${found.size}</strong> خط — جديد: <strong>${newItemsP.length}</strong>`;
+    if(skippedItemsP.length) statusHtmlP+=` | <span style="color:var(--yellow);font-weight:700;">⚠️ ${skippedItemsP.length} مرفوع مسبقاً (تم تخطيه)</span>`;
+    statusHtmlP+=' — راجع المبالغ أدناه قبل الحفظ.</div>';
+    res.innerHTML=statusHtmlP;
 
     // Show editable preview
     let tableHtml='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:380px;">';
