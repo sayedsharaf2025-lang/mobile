@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام إدارة فواتير فودافون</title>
+    <title>نظام إدارة فواتير فودافون السحابي</title>
     <style>
         :root {
             --red: #e60000;
@@ -45,12 +45,20 @@
             top: 0;
             z-index: 100;
             box-shadow: 0 2px 10px rgba(230,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .app-header h1 {
-            font-size: clamp(15px, 4vw, 20px);
+            font-size: clamp(14px, 4vw, 20px);
             font-weight: 700;
-            text-align: center;
-            letter-spacing: 0.3px;
+        }
+        .sync-indicator {
+            font-size: 12px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
         }
 
         /* ─── Tab Bar ─── */
@@ -175,14 +183,8 @@
             gap: 8px;
             align-items: stretch;
         }
-        .row-group input {
-            flex: 1;
-        }
-        .row-group button {
-            flex-shrink: 0;
-            width: auto;
-            padding: 10px 14px;
-        }
+        .row-group input { flex: 1; }
+        .row-group button { flex-shrink: 0; width: auto; padding: 10px 14px; }
 
         /* ─── Form Controls ─── */
         label {
@@ -207,16 +209,8 @@
             transition: border-color 0.2s;
             -webkit-appearance: none;
         }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: var(--red);
-        }
-        textarea {
-            height: 130px;
-            direction: ltr;
-            font-size: 12px;
-            resize: vertical;
-        }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--red); }
+        textarea { height: 130px; direction: ltr; font-size: 12px; resize: vertical; }
 
         /* ─── Buttons ─── */
         button {
@@ -237,11 +231,9 @@
         }
         button:active { transform: scale(0.97); }
         .btn-primary { background: var(--red); color: white; }
-        .btn-primary:hover { background: var(--red-dark); }
         .btn-secondary { background: var(--gray); color: var(--text); }
         .btn-success { background: var(--green); color: white; }
         .btn-danger { background: #dc3545; color: white; }
-        .btn-warning { background: var(--yellow); color: white; }
         .btn-info { background: var(--blue); color: white; }
 
         /* ─── Filter Chips ─── */
@@ -269,11 +261,7 @@
             margin-top: 0;
             width: auto;
         }
-        .chip.active, .chip:hover {
-            background: var(--red);
-            color: white;
-            border-color: var(--red);
-        }
+        .chip.active, .chip:hover { background: var(--red); color: white; border-color: var(--red); }
 
         /* ─── Mobile-First Table (Cards) ─── */
         .line-cards { margin-top: 4px; }
@@ -288,419 +276,420 @@
         .line-card.paid { border-color: #86efac; background: #f0fdf4; }
         .line-card.unpaid { border-color: #fca5a5; background: #fff5f5; }
         .line-card.overprice { border-color: #fcd34d; background: #fffbeb; }
-        .line-card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-        .line-name {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text);
-        }
-        .line-phone {
-            font-size: 12px;
-            color: var(--gray-dark);
-            margin-top: 2px;
-            direction: ltr;
-            text-align: right;
-        }
-        .line-status-badge {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 9px;
-            border-radius: 20px;
-            white-space: nowrap;
-        }
+        .line-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .line-name { font-size: 14px; font-weight: 700; color: var(--text); }
+        .line-phone { font-size: 12px; color: var(--gray-dark); margin-top: 2px; direction: ltr; text-align: right; }
+        .line-status-badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
         .badge-paid { background: var(--green-light); color: var(--green); }
         .badge-unpaid { background: #fee2e2; color: var(--red); }
-        .line-card-body {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-bottom: 10px;
-        }
-        .line-stat {
-            background: var(--gray);
-            border-radius: 6px;
-            padding: 6px 8px;
-            text-align: center;
-        }
-        .line-stat .ls-val {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text);
-        }
-        .line-stat .ls-lbl {
-            font-size: 10px;
-            color: var(--gray-dark);
-            margin-top: 1px;
-        }
+        .line-card-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+        .line-stat { background: var(--gray); border-radius: 6px; padding: 6px 8px; text-align: center; }
+        .line-stat .ls-val { font-size: 13px; font-weight: 700; color: var(--text); }
+        .line-stat .ls-lbl { font-size: 10px; color: var(--gray-dark); margin-top: 1px; }
         .line-stat.diff-pos .ls-val { color: var(--green); }
         .line-stat.diff-neg .ls-val { color: var(--red); }
-        .line-card-package {
-            font-size: 11px;
-            color: var(--gray-dark);
-            margin-bottom: 8px;
-        }
-        .line-card-action button {
-            margin-top: 0;
-            padding: 9px 12px;
-            font-size: 13px;
-        }
+        .line-card-package { font-size: 11px; color: var(--gray-dark); margin-bottom: 8px; }
+        .line-card-action button { margin-top: 0; padding: 9px 12px; font-size: 13px; }
 
-        /* ─── Desktop Table (for wide screens) ─── */
+        /* ─── Manage Table (Settings) ─── */
+        .manage-table-container { overflow-x: auto; margin-top: 10px; border: 1px solid var(--gray-mid); border-radius: var(--radius-sm); }
+        .manage-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--white); }
+        .manage-table th, .manage-table td { padding: 10px 8px; border-bottom: 1px solid var(--gray-mid); text-align: center; }
+        .manage-table th { background: var(--gray); color: var(--text); font-weight: 600; }
+        .manage-btn-edit { background: var(--blue); color: white; padding: 4px 8px; font-size: 11px; width: auto; display: inline-flex; margin: 2px;}
+        .manage-btn-delete { background: var(--red); color: white; padding: 4px 8px; font-size: 11px; width: auto; display: inline-flex; margin: 2px;}
+
+        /* ─── Desktop Table ─── */
         @media (min-width: 640px) {
             .line-cards { display: none; }
             .desktop-table { display: block; }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 13px;
-            }
-            th, td {
-                padding: 10px 8px;
-                border: 1px solid var(--gray-mid);
-                text-align: center;
-            }
-            th {
-                background: var(--red);
-                color: white;
-                font-weight: 600;
-            }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; }
+            th, td { padding: 10px 8px; border: 1px solid var(--gray-mid); text-align: center; }
+            th { background: var(--red); color: white; font-weight: 600; }
             tr.paid td { background: #f0fdf4; }
             tr.unpaid td { background: #fff5f5; }
             tr.overprice td { background: #fffbeb; }
-            .tbl-action-btn {
-                padding: 5px 10px;
-                font-size: 12px;
-                margin: 0;
-                width: auto;
-            }
+            .tbl-action-btn { padding: 5px 10px; font-size: 12px; margin: 0; width: auto; }
         }
-        @media (max-width: 639px) {
-            .desktop-table { display: none; }
-        }
+        @media (max-width: 639px) { .desktop-table { display: none; } }
 
         /* ─── Upload Zone ─── */
-        .upload-zone {
-            border: 2px dashed var(--gray-mid);
-            border-radius: var(--radius);
-            padding: 24px 16px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .upload-zone:hover, .upload-zone.drag-over {
-            border-color: var(--red);
-            background: var(--red-light);
-        }
-        .upload-zone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
+        .upload-zone { border: 2px dashed var(--gray-mid); border-radius: var(--radius); padding: 24px 16px; text-align: center; cursor: pointer; position: relative; }
+        .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
         .upload-zone-icon { font-size: 36px; margin-bottom: 8px; }
         .upload-zone-text { font-size: 14px; font-weight: 600; color: var(--gray-dark); }
-        .upload-zone-sub { font-size: 12px; color: #aaa; margin-top: 4px; }
 
-        /* ─── Hidden ─── */
+        /* ─── Modal ─── */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
+        .modal-card { background: var(--white); border-radius: var(--radius); padding: 20px; width: 100%; max-width: 400px; box-shadow: var(--shadow-lg); }
         .hidden { display: none !important; }
-
-        /* ─── Responsive tweaks ─── */
-        @media (max-width: 380px) {
-            .main-content { padding: 12px 10px; }
-            .line-card-body { grid-template-columns: repeat(2, 1fr); }
-        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    </script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
 </head>
 <body>
 
 <div class="app-header">
-    <h1>📊 نظام إدارة فواتير فودافون</h1>
+    <h1>☁️ نظام فودافون السحابي</h1>
+    <div class="sync-indicator" id="syncStatus">🔄 جاري المزامنة...</div>
 </div>
 
 <div class="tab-bar">
-    <button class="tab-btn active" onclick="showTab('alerts', this)">
-        <span class="tab-icon">⚠️</span>التنبيهات
-    </button>
-    <button class="tab-btn" onclick="showTab('all', this)">
-        <span class="tab-icon">📋</span>الخطوط
-    </button>
-    <button class="tab-btn" onclick="showTab('upload', this)">
-        <span class="tab-icon">📎</span>رفع فاتورة
-    </button>
-    <button class="tab-btn" onclick="showTab('settings', this)">
-        <span class="tab-icon">⚙️</span>الإعدادات
-    </button>
+    <button class="tab-btn active" onclick="showTab('alerts', this)"><span class="tab-icon">⚠️</span>التنبيهات</button>
+    <button class="tab-btn" onclick="showTab('all', this)"><span class="tab-icon">📋</span>الخطوط</button>
+    <button class="tab-btn" onclick="showTab('upload', this)"><span class="tab-icon">📎</span>رفع فاتورة</button>
+    <button class="tab-btn" onclick="showTab('settings', this)"><span class="tab-icon">⚙️</span>الإعدادات</button>
 </div>
 
 <div class="main-content">
+    <div id="tab-alerts"><div id="alertsContainer"></div></div>
 
-    <!-- ─── Tab: Alerts ─── -->
-    <div id="tab-alerts">
-        <div id="alertsContainer"></div>
-    </div>
-
-    <!-- ─── Tab: All Lines ─── -->
     <div id="tab-all" class="hidden">
         <div class="card">
             <div class="row-group">
                 <input type="month" id="monthPicker">
-                <button class="btn-secondary" onclick="loadMonth()" style="margin-top:0;width:auto;">عرض</button>
+                <button class="btn-secondary" onclick="loadMonth()" style="margin-top:0;">عرض</button>
             </div>
         </div>
-
         <div class="filter-chips">
             <button class="chip active" onclick="filterTable('all', this)">الكل</button>
             <button class="chip" onclick="filterTable('unpaid', this)">عليهم فلوس</button>
             <button class="chip" onclick="filterTable('paid', this)">خلصوا</button>
             <button class="chip" onclick="filterTable('overprice', this)">فاتورة أعلى</button>
         </div>
-
         <div id="statsGrid" class="stats-grid hidden"></div>
-
-        <!-- Mobile cards -->
         <div id="lineCards" class="line-cards"></div>
-
-        <!-- Desktop table -->
         <div id="desktopTable" class="desktop-table"></div>
     </div>
 
-    <!-- ─── Tab: Upload ─── -->
     <div id="tab-upload" class="hidden">
-        <div class="card">
-            <div class="card-title">📅 اختر الشهر</div>
-            <input type="month" id="uploadMonth">
-        </div>
+        <div class="card"><div class="card-title">📅 اختر الشهر</div><input type="month" id="uploadMonth"></div>
         <div class="card">
             <div class="card-title">📎 رفع ملف الفاتورة</div>
-            <div class="upload-zone" id="uploadZone">
+            <div class="upload-zone">
                 <input type="file" id="pdfInput" accept=".pdf">
                 <div class="upload-zone-icon">📄</div>
-                <div class="upload-zone-text">اضغط لاختيار ملف PDF</div>
-                <div class="upload-zone-sub" id="uploadFileName">أو اسحب الملف هنا</div>
+                <div class="upload-zone-text" id="uploadFileName">اضغط لاختيار ملف PDF أو اسحبه هنا</div>
             </div>
-            <button class="btn-primary" onclick="uploadAndProcess()">🔄 معالجة الفاتورة وحفظها</button>
+            <button class="btn-primary" onclick="uploadAndProcess()">🔄 معالجة وحفظ سحابي</button>
         </div>
         <div id="uploadResult"></div>
     </div>
 
-    <!-- ─── Tab: Settings ─── -->
     <div id="tab-settings" class="hidden">
         <div class="card">
-            <div class="card-title">📞 الأسماء والأسعار</div>
-            <label>بيانات الأرقام (الاسم,الرقم,السعر,نوع الباقة)</label>
-            <textarea id="namesData" placeholder="الاسم,الرقم بدون 0,السعر,نوع الباقة
-مثال:
-فتحي صابر,1009111258,70,FlexRevamp"></textarea>
-            <button class="btn-success" onclick="saveNames()">💾 حفظ الأسماء</button>
+            <div class="card-title">📋 إدارة وتعديل الخطوط المسجلة</div>
+            <input type="text" id="searchNamesInput" placeholder="🔍 ابحث بالاسم أو الرقم الحالي..." oninput="renderManageTable()" style="margin-bottom: 12px;">
+            <div class="manage-table-container">
+                <table class="manage-table">
+                    <thead><tr><th>الاسم</th><th>الرقم</th><th>الباقة</th><th>سعرك</th><th>إجراء</th></tr></thead>
+                    <tbody id="manageTableBody"></tbody>
+                </table>
+            </div>
         </div>
-
         <div class="card">
             <div class="card-title">➕ إضافة رقم جديد</div>
-            <label>الاسم</label>
-            <input type="text" id="newName" placeholder="مثال: فتحي صابر">
-            <label>الرقم (بدون 0)</label>
-            <input type="text" id="newPhone" placeholder="مثال: 1009111258">
-            <label>السعر</label>
-            <input type="number" id="newPrice" placeholder="مثال: 70">
-            <label>نوع الباقة</label>
-            <input type="text" id="newPackage" placeholder="مثال: FlexRevamp">
-            <button class="btn-success" onclick="addNewNumber()">➕ إضافة</button>
+            <label>الاسم</label><input type="text" id="newName" placeholder="مثال: فتحي صابر">
+            <label>الرقم (بدون 0)</label><input type="text" id="newPhone" placeholder="مثال: 1009111258">
+            <label>السعر</label><input type="number" id="newPrice" placeholder="مثال: 70">
+            <label>نوع الباقة</label><input type="text" id="newPackage" placeholder="مثال: FlexRevamp">
+            <button class="btn-success" onclick="addNewNumber()">➕ إضافة الخط</button>
         </div>
-
         <div class="card">
-            <button class="btn-danger" onclick="resetAllData()">🗑️ مسح كل البيانات</button>
+            <div class="card-title">📝 عرض البيانات الخام (استيراد وتصدير نصي)</div>
+            <textarea id="namesData" placeholder="الاسم,الرقم بدون 0,السعر,نوع الباقة"></textarea>
+            <button class="btn-primary" onclick="saveNamesFromTextarea()">💾 حفظ من النص المكتوب أعلاه</button>
         </div>
     </div>
+</div>
 
+<div id="editModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <div class="card-title" style="border-bottom: 2px solid var(--blue);">✏️ تعديل بيانات الخط</div>
+        <input type="hidden" id="editOldPhone">
+        <label>الاسم</label><input type="text" id="editName">
+        <label>الرقم (بدون 0)</label><input type="text" id="editPhone">
+        <label>الباقة</label><input type="text" id="editPackage">
+        <label>سعرك</label><input type="number" id="editPrice">
+        <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button class="btn-info" onclick="submitEdit()">💾 حفظ التعديل</button>
+            <button class="btn-secondary" onclick="closeEditModal()">إلغاء</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    const STORAGE_NAMES  = "vodafone_names";
-    const STORAGE_MONTHS = "vodafone_months";
+    // الرابط المباشر لقاعدة بياناتك على Firebase
+    const FIREBASE_URL = "https://mobile-invoic-default-rtdb.firebaseio.com/"; 
 
+    let globalNames = {};
+    let globalMonths = {};
     let currentMonthData = [];
-    let currentFilter    = "all";
-    let namesMap         = new Map();
+    let currentFilter = "all";
 
-    /* ════════════════ Names ════════════════ */
-    function loadNames() {
-        const saved = localStorage.getItem(STORAGE_NAMES);
-        if (saved) {
-            const names = JSON.parse(saved);
-            namesMap.clear();
-            names.forEach(n => namesMap.set(n.phone, { name: n.name, myPrice: n.myPrice, packageType: n.packageType }));
-            document.getElementById('namesData').value = names.map(n => `${n.name},${n.phone},${n.myPrice},${n.packageType}`).join('\n');
-        } else {
-            const defaults = [
-                ["فتحي صابر1","1009111258",66.07,"FlexRevamp"],
-                ["الليثى","1050465564",153.49,"BusinessFlex"],
-                ["نادر","1000238985",66.07,"FlexRevamp"],
-                ["ايمن جمال","1050558655",112.86,"FlexRevamp"],
-                ["محمد مامون ابوزيد","1010739900",154.72,"FlexRevamp"],
-                ["عبدالرحمن عصام عبدالصادق","1018388851",185.50,"BusinessFlex+"]
-            ];
-            defaults.forEach(n => namesMap.set(n[1], { name: n[0], myPrice: n[2], packageType: n[3] }));
-            saveNamesToStorage();
+    async function apiRequest(path, method = 'GET', body = null) {
+        try {
+            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) options.body = JSON.stringify(body);
+            const res = await fetch(`${FIREBASE_URL}${path}.json`, options);
+            document.getElementById('syncStatus').textContent = "☁️ متصل ومزامن سحابياً";
+            return await res.json();
+        } catch (e) {
+            document.getElementById('syncStatus').textContent = "❌ فشل الاتصال بالسحاب";
+            return null;
         }
     }
 
-    function saveNamesToStorage() {
-        const arr = [];
-        for (let [phone, data] of namesMap.entries()) arr.push({ phone, ...data });
-        localStorage.setItem(STORAGE_NAMES, JSON.stringify(arr));
+    async function loadCloudData() {
+        const names = await apiRequest('/names');
+        if (names) globalNames = names;
+        else loadDefaultsIfEmpty();
+
+        const months = await apiRequest('/months');
+        if (months) globalMonths = months;
+
+        updateTextareaFromMap();
+        generateAlerts();
+        renderManageTable();
     }
 
-    function saveNames() {
+    function loadDefaultsIfEmpty() {
+        if (Object.keys(globalNames).length === 0) {
+            const defaults = [
+                ["فتحي صابر1", "1009111258", 70, "FlexRevamp"],
+                ["الليثى", "1050465564", 160, "BusinessFlex"],
+                ["نادر", "1000238985", 70, "FlexRevamp"],
+                ["ايمن جمال", "1050558655", 115, "FlexRevamp"],
+                ["محمد مامون ابوزيد", "1010739900", 160, "FlexRevamp"],
+                ["عبدالرحمن عصام عبدالصادق", "1018388851", 190, "BusinessFlex+"]
+            ];
+            defaults.forEach(n => { globalNames[n[1]] = { name: n[0], myPrice: n[2], packageType: n[3] }; });
+            apiRequest('/names', 'PUT', globalNames);
+        }
+    }
+
+    function updateTextareaFromMap() {
+        const arr = [];
+        for (let phone in globalNames) {
+            let d = globalNames[phone];
+            arr.push(`${d.name},0${phone},${d.myPrice},${d.packageType}`);
+        }
+        document.getElementById('namesData').value = arr.join('\n');
+    }
+
+    async function saveNamesFromTextarea() {
         const lines = document.getElementById('namesData').value.trim().split('\n');
-        namesMap.clear();
+        globalNames = {};
         for (let line of lines) {
             const p = line.split(',').map(s => s.trim());
             if (p.length >= 4) {
                 const phone = p[1].replace(/^0+/, '');
-                namesMap.set(phone, { name: p[0], myPrice: parseFloat(p[2]), packageType: p[3] });
+                globalNames[phone] = { name: p[0], myPrice: parseFloat(p[2]) || 0, packageType: p[3] };
             }
         }
-        saveNamesToStorage();
-        showToast("✅ تم حفظ الأسماء بنجاح!");
-        if (currentMonthData.length) loadMonth();
+        await apiRequest('/names', 'PUT', globalNames);
+        showToast("✅ تم الحفظ والتحديث سحابياً!");
+        renderManageTable();
+        refreshCurrentMonthNames();
     }
 
-    function addNewNumber() {
-        const name        = document.getElementById('newName').value.trim();
-        const phone       = document.getElementById('newPhone').value.trim().replace(/^0+/, '');
-        const price       = parseFloat(document.getElementById('newPrice').value);
+    async function addNewNumber() {
+        const name = document.getElementById('newName').value.trim();
+        const phone = document.getElementById('newPhone').value.trim().replace(/^0+/, '');
+        const price = parseFloat(document.getElementById('newPrice').value);
         const packageType = document.getElementById('newPackage').value.trim();
 
         if (!name || !phone || isNaN(price) || !packageType) { showToast("⚠️ يرجى ملء جميع الحقول", "warning"); return; }
 
-        namesMap.set(phone, { name, myPrice: price, packageType });
-        saveNamesToStorage();
+        globalNames[phone] = { name, myPrice: price, packageType };
+        await apiRequest(`/names/${phone}`, 'PUT', globalNames[phone]);
 
         ['newName','newPhone','newPrice','newPackage'].forEach(id => document.getElementById(id).value = '');
-        const arr = [];
-        for (let [p, d] of namesMap.entries()) arr.push(`${d.name},${p},${d.myPrice},${d.packageType}`);
-        document.getElementById('namesData').value = arr.join('\n');
-
-        showToast(`✅ تم إضافة ${name} بنجاح!`);
-        if (currentMonthData.length) loadMonth();
+        showToast("✅ تم إضافة الخط بنجاح سحابياً!");
+        renderManageTable();
+        refreshCurrentMonthNames();
     }
 
-    /* ════════════════ Month Data ════════════════ */
-    function saveMonthData(month, data) {
-        const all = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
-        all[month] = data;
-        localStorage.setItem(STORAGE_MONTHS, JSON.stringify(all));
+    function renderManageTable() {
+        const term = document.getElementById('searchNamesInput').value.trim().toLowerCase();
+        const tbody = document.getElementById('manageTableBody');
+        tbody.innerHTML = '';
+
+        for (let phone in globalNames) {
+            let d = globalNames[phone];
+            if (term && !d.name.toLowerCase().includes(term) && !phone.includes(term)) continue;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${d.name}</strong></td>
+                <td dir="ltr">0${phone}</td>
+                <td>${d.packageType}</td>
+                <td><span style="color:var(--green); font-weight:bold;">${d.myPrice} ج</span></td>
+                <td>
+                    <button class="manage-btn-edit" onclick="openEditModal('${phone}')">✏️</button>
+                    <button class="manage-btn-delete" onclick="deleteNumber('${phone}')">❌</button>
+                </td>`;
+            tbody.appendChild(tr);
+        }
+        if(tbody.innerHTML === '') {
+            tbody.innerHTML = `<tr><td colspan="5" style="color:var(--gray-dark); padding:20px;">لا توجد خطوط تطابق البحث</td></tr>`;
+        }
     }
 
-    function loadMonthData(month) {
-        const all = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
-        return all[month] || [];
+    function openEditModal(phone) {
+        const d = globalNames[phone];
+        document.getElementById('editOldPhone').value = phone;
+        document.getElementById('editName').value = d.name;
+        document.getElementById('editPhone').value = '0' + phone;
+        document.getElementById('editPackage').value = d.packageType;
+        document.getElementById('editPrice').value = d.myPrice;
+        document.getElementById('editModal').classList.remove('hidden');
     }
 
-    /* ════════════════ Upload ════════════════ */
+    function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+    async function submitEdit() {
+        const oldPhone = document.getElementById('editOldPhone').value;
+        const name = document.getElementById('editName').value.trim();
+        const phone = document.getElementById('editPhone').value.trim().replace(/^0+/, '');
+        const pack = document.getElementById('editPackage').value.trim();
+        const price = parseFloat(document.getElementById('editPrice').value) || 0;
+
+        if(!name || !phone || !pack) { showToast("⚠️ يرجى ملء الحقول المطلوبة", "warning"); return; }
+
+        if(oldPhone !== phone) {
+            await apiRequest(`/names/${oldPhone}`, 'DELETE');
+            delete globalNames[oldPhone];
+        }
+
+        globalNames[phone] = { name, myPrice: price, packageType: pack };
+        await apiRequest(`/names/${phone}`, 'PUT', globalNames[phone]);
+        closeEditModal();
+        showToast("✅ تم تعديل بيانات الخط سحابياً بنجاح");
+        renderManageTable();
+        refreshCurrentMonthNames();
+    }
+
+    async function deleteNumber(phone) {
+        if(confirm(`⚠️ هل أنت متأكد من حذف هذا الخط سحابياً؟`)) {
+            await apiRequest(`/names/${phone}`, 'DELETE');
+            delete globalNames[phone];
+            showToast("🗑️ تم حذف الخط");
+            renderManageTable();
+            refreshCurrentMonthNames();
+        }
+    }
+
+    async function refreshCurrentMonthNames() {
+        const m = document.getElementById('monthPicker').value;
+        if (!m || !globalMonths[m]) return;
+        
+        let mData = globalMonths[m].map(item => {
+            const contact = globalNames[item.phone];
+            if(contact) {
+                return { ...item, name: contact.name, myPrice: contact.myPrice, packageType: contact.packageType };
+            }
+            return item;
+        });
+        
+        globalMonths[m] = mData;
+        await apiRequest(`/months/${m}`, 'PUT', mData);
+        currentMonthData = mData;
+        if (document.getElementById('tab-all').classList.contains('hidden') === false) {
+            renderLines();
+            renderStats();
+        }
+        generateAlerts();
+    }
+
+    /* ─── Upload & PDF Processing ─── */
     async function uploadAndProcess() {
         const fileInput = document.getElementById('pdfInput');
-        const month     = document.getElementById('uploadMonth').value;
+        const month = document.getElementById('uploadMonth').value;
 
-        if (!fileInput.files.length) { showToast("⚠️ يرجى رفع ملف PDF", "warning"); return; }
-        if (!month)                  { showToast("⚠️ يرجى اختيار الشهر", "warning"); return; }
-
-        const resultDiv = document.getElementById('uploadResult');
-        resultDiv.innerHTML = '<div class="alert-item info">⏳ جاري معالجة الفاتورة…</div>';
+        if (!fileInput.files.length || !month) { showToast("⚠️ املأ الملف واختر الشهر", "warning"); return; }
+        const resDiv = document.getElementById('uploadResult');
+        resDiv.innerHTML = '<div class="alert-item info">⏳ جاري قراءة ملف الـ PDF وتفصيص الخطوط سحابياً...</div>';
 
         try {
-            const arrayBuffer = await fileInput.files[0].arrayBuffer();
-            const pdf         = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-            let fullText = '';
+            const buffer = await fileInput.files[0].arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+            let text = '';
             for (let i = 1; i <= pdf.numPages; i++) {
-                const page        = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                fullText         += textContent.items.map(item => item.str).join(' ') + ' ';
+                let p = await pdf.getPage(i);
+                let c = await p.getTextContent();
+                text += c.items.map(it => it.str).join(' ') + ' ';
             }
 
-            const tokens   = fullText.split(/\s+/);
-            const extracted = [];
-            for (let idx = 0; idx < tokens.length; idx++) {
-                if (/^1[0-9]{9}$/.test(tokens[idx])) {
-                    for (let offset = 1; offset <= 5; offset++) {
-                        const next = tokens[idx + offset];
+            const tokens = text.split(/\s+/);
+            const uniqueMap = new Map();
+            for (let i = 0; i < tokens.length; i++) {
+                if (/^1[0-9]{9}$/.test(tokens[i])) {
+                    for (let o = 1; o <= 5; o++) {
+                        let next = tokens[i + o];
                         if (next && /^[0-9]+(\.[0-9]+)?$/.test(next)) {
-                            extracted.push({ phone: tokens[idx], invoicePrice: parseFloat(next) });
+                            uniqueMap.set(tokens[i], parseFloat(next));
                             break;
                         }
                     }
                 }
             }
 
-            const uniqueMap = new Map();
-            for (let item of extracted) if (!uniqueMap.has(item.phone)) uniqueMap.set(item.phone, item.invoicePrice);
-
-            const monthData = [];
-            for (let [phone, invoicePrice] of uniqueMap.entries()) {
-                const contact = namesMap.get(phone);
-                monthData.push(contact
-                    ? { phone, name: contact.name, myPrice: contact.myPrice, invoicePrice, packageType: contact.packageType, paid: false }
-                    : { phone, name: "⚠️ بدون اسم", myPrice: 0, invoicePrice, packageType: "غير معروف", paid: false }
-                );
+            let monthData = [];
+            let checkCloudNames = false;
+            for (let [ph, inv] of uniqueMap.entries()) {
+                if (!globalNames[ph]) {
+                    globalNames[ph] = { name: "⚠️ بدون اسم", myPrice: 0, packageType: "غير معروف" };
+                    checkCloudNames = true;
+                }
+                monthData.push({ phone: ph, name: globalNames[ph].name, myPrice: globalNames[ph].myPrice, invoicePrice: inv, packageType: globalNames[ph].packageType, paid: false });
             }
 
-            saveMonthData(month, monthData);
-            resultDiv.innerHTML = `<div class="alert-item info">✅ تم حفظ فاتورة شهر ${month} بنجاح! (${monthData.length} رقم)</div>`;
-            showTab('alerts', document.querySelector('.tab-btn'));
-        } catch (err) {
-            resultDiv.innerHTML = `<div class="alert-item danger">❌ حدث خطأ: ${err.message}</div>`;
+            if(checkCloudNames) await apiRequest('/names', 'PUT', globalNames);
+
+            await apiRequest(`/months/${month}`, 'PUT', monthData);
+            globalMonths[month] = monthData;
+
+            resDiv.innerHTML = `<div class="alert-item info">✅ تم المعالجة والحفظ السحابي بنجاح لشهر ${month}! (${monthData.length} رقم)</div>`;
+            showTab('alerts');
+        } catch(e) {
+            resDiv.innerHTML = `<div class="alert-item danger">❌ خطأ أثناء المعالجة السحابية: ${e.message}</div>`;
         }
     }
 
-    /* ════════════════ Display ════════════════ */
     function loadMonth() {
-        const month = document.getElementById('monthPicker').value;
-        if (!month) return;
-        currentMonthData = loadMonthData(month);
+        const m = document.getElementById('monthPicker').value;
+        currentMonthData = globalMonths[m] || [];
         renderLines();
         renderStats();
     }
 
     function renderLines() {
         let data = [...currentMonthData];
-        if (currentFilter === 'paid')      data = data.filter(d => d.paid);
-        if (currentFilter === 'unpaid')    data = data.filter(d => !d.paid);
+        if (currentFilter === 'paid') data = data.filter(d => d.paid);
+        if (currentFilter === 'unpaid') data = data.filter(d => !d.paid);
         if (currentFilter === 'overprice') data = data.filter(d => d.invoicePrice > d.myPrice);
 
         if (!data.length) {
-            document.getElementById('lineCards').innerHTML = '<div class="alert-item info">لا توجد بيانات لهذا الشهر</div>';
+            document.getElementById('lineCards').innerHTML = '<div class="alert-item info">لا توجد بيانات متاحة لهذا الفلتر</div>';
             document.getElementById('desktopTable').innerHTML = '';
             return;
         }
 
-        // Mobile cards
+        // Mobile Cards Display
         let cardsHtml = '';
         for (let d of data) {
-            const diff       = d.myPrice - d.invoicePrice;
+            const diff = d.myPrice - d.invoicePrice;
             const cardClass  = d.invoicePrice > d.myPrice ? 'overprice' : (d.paid ? 'paid' : 'unpaid');
             const diffClass  = diff >= 0 ? 'diff-pos' : 'diff-neg';
-            const badgeClass = d.paid ? 'badge-paid' : 'badge-unpaid';
-            const badgeText  = d.paid ? '✅ دفع' : '❌ لم يدفع';
-
             cardsHtml += `
             <div class="line-card ${cardClass}">
                 <div class="line-card-top">
                     <div>
                         <div class="line-name">${d.name}</div>
-                        <div class="line-phone" dir="ltr">0${d.phone}</div>
+                        <div class="line-phone">0${d.phone}</div>
                     </div>
-                    <span class="line-status-badge ${badgeClass}">${badgeText}</span>
+                    <span class="line-status-badge ${d.paid ? 'badge-paid' : 'badge-unpaid'}">${d.paid ? '✅ دفع' : '❌ لم يدفع'}</span>
                 </div>
                 <div class="line-card-package">📦 ${d.packageType}</div>
                 <div class="line-card-body">
@@ -708,26 +697,22 @@
                     <div class="line-stat"><div class="ls-val">${d.invoicePrice.toFixed(0)}</div><div class="ls-lbl">الفاتورة</div></div>
                     <div class="line-stat ${diffClass}"><div class="ls-val">${diff.toFixed(0)}</div><div class="ls-lbl">الفرق</div></div>
                 </div>
-                <div class="line-card-action">
-                    <button class="${d.paid ? 'btn-secondary' : 'btn-success'}" onclick="togglePaid('${d.phone}')">
-                        ${d.paid ? '🗑️ إلغاء الدفع' : '💰 تسجيل الدفع'}
-                    </button>
-                </div>
+                <button class="${d.paid ? 'btn-secondary':'btn-success'}" onclick="togglePaid('${d.phone}')">
+                    ${d.paid ? '🗑️ إلغاء الدفع':'💰 تسجيل الدفع'}
+                </button>
             </div>`;
         }
         document.getElementById('lineCards').innerHTML = cardsHtml;
 
-        // Desktop table
+        // Desktop Table Display
         let tableHtml = `<div style="overflow-x:auto"><table>
             <tr><th>الاسم</th><th>الرقم</th><th>الباقة</th><th>سعرك</th><th>الفاتورة</th><th>الفرق</th><th>الحالة</th><th>إجراء</th></tr>`;
         for (let d of data) {
-            const diff      = d.myPrice - d.invoicePrice;
-            const rowClass  = d.invoicePrice > d.myPrice ? 'overprice' : (d.paid ? 'paid' : 'unpaid');
-            const diffColor = diff >= 0 ? 'color:#1a9e4a' : 'color:#e60000';
-            tableHtml += `<tr class="${rowClass}">
-                <td>${d.name}</td><td dir="ltr">0${d.phone}</td><td>${d.packageType}</td>
-                <td>${d.myPrice.toFixed(2)}</td><td>${d.invoicePrice.toFixed(2)}</td>
-                <td style="${diffColor}">${diff.toFixed(2)}</td>
+            const diff = d.myPrice - d.invoicePrice;
+            tableHtml += `<tr class="${d.invoicePrice > d.myPrice ? 'overprice' : (d.paid ? 'paid' : 'unpaid')}">
+                <td><strong>${d.name}</strong></td><td dir="ltr">0${d.phone}</td><td>${d.packageType}</td>
+                <td>${d.myPrice.toFixed(1)}</td><td>${d.invoicePrice.toFixed(1)}</td>
+                <td style="${diff >= 0 ? 'color:#1a9e4a':'color:#e60000'}">${diff.toFixed(1)}</td>
                 <td>${d.paid ? '✅ دفع' : '❌ عليه'}</td>
                 <td><button class="tbl-action-btn ${d.paid ? 'btn-secondary' : 'btn-success'}" onclick="togglePaid('${d.phone}')">
                     ${d.paid ? 'إلغاء' : 'دفع'}
@@ -740,33 +725,30 @@
 
     function renderStats() {
         const data = currentMonthData;
-        if (!data.length) { document.getElementById('statsGrid').classList.add('hidden'); return; }
-
+        if(!data.length) { document.getElementById('statsGrid').classList.add('hidden'); return; }
         const totalInvoice = data.reduce((s, d) => s + d.invoicePrice, 0);
-        const totalMy      = data.reduce((s, d) => s + d.myPrice, 0);
-        const totalPaid    = data.filter(d => d.paid).reduce((s, d) => s + d.myPrice, 0);
-        const totalUnpaid  = totalMy - totalPaid;
-        const profit       = totalMy - totalInvoice;
+        const totalMy = data.reduce((s, d) => s + d.myPrice, 0);
+        const totalPaid = data.filter(d => d.paid).reduce((s, d) => s + d.myPrice, 0);
+        const totalUnpaid = totalMy - totalPaid;
+        const profit = totalMy - totalInvoice;
 
         document.getElementById('statsGrid').innerHTML = `
-            <div class="stat-box"><span class="stat-val">${totalInvoice.toFixed(0)} ج</span><div class="stat-lbl">فودافون تطلب</div></div>
-            <div class="stat-box blue"><span class="stat-val">${totalMy.toFixed(0)} ج</span><div class="stat-lbl">هتتحصله</div></div>
-            <div class="stat-box green"><span class="stat-val">${profit.toFixed(0)} ج</span><div class="stat-lbl">أرباحك</div></div>
+            <div class="stat-box"><span class="stat-val">${totalInvoice.toFixed(0)} ج</span><div class="stat-lbl">طلب فودافون</div></div>
+            <div class="stat-box blue"><span class="stat-val">${totalMy.toFixed(0)} ج</span><div class="stat-lbl">تحصيلك الكلي</div></div>
+            <div class="stat-box green"><span class="stat-val">${profit.toFixed(0)} ج</span><div class="stat-lbl">أرباحك المتوقعة</div></div>
             <div class="stat-box"><span class="stat-val">${totalPaid.toFixed(0)} ج</span><div class="stat-lbl">تم تحصيله</div></div>
-            <div class="stat-box yellow"><span class="stat-val">${totalUnpaid.toFixed(0)} ج</span><div class="stat-lbl">متبقي عليهم</div></div>
-            <div class="stat-box"><span class="stat-val">${data.filter(d=>d.paid).length}/${data.length}</span><div class="stat-lbl">دفعوا</div></div>
-        `;
+            <div class="stat-box yellow"><span class="stat-val">${totalUnpaid.toFixed(0)} ج</span><div class="stat-lbl">متبقي بالخارج</div></div>
+            <div class="stat-box"><span class="stat-val">${data.filter(d=>d.paid).length}/${data.length}</span><div class="stat-lbl">الخطوط المسددة</div></div>`;
         document.getElementById('statsGrid').classList.remove('hidden');
     }
 
-    function togglePaid(phone) {
-        const month = document.getElementById('monthPicker').value;
-        const data  = loadMonthData(month);
-        const idx   = data.findIndex(d => d.phone === phone);
-        if (idx !== -1) {
-            data[idx].paid = !data[idx].paid;
-            saveMonthData(month, data);
-            currentMonthData = data;
+    async function togglePaid(phone) {
+        const m = document.getElementById('monthPicker').value;
+        const idx = currentMonthData.findIndex(d => d.phone === phone);
+        if(idx !== -1) {
+            currentMonthData[idx].paid = !currentMonthData[idx].paid;
+            globalMonths[m] = currentMonthData;
+            await apiRequest(`/months/${m}`, 'PUT', currentMonthData);
             renderLines();
             renderStats();
             generateAlerts();
@@ -776,18 +758,14 @@
     function filterTable(type, el) {
         currentFilter = type;
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        if (el) el.classList.add('active');
+        if(el) el.classList.add('active');
         renderLines();
     }
 
-    /* ════════════════ Alerts ════════════════ */
     function generateAlerts() {
-        const allMonths = JSON.parse(localStorage.getItem(STORAGE_MONTHS) || '{}');
-        const months    = Object.keys(allMonths).sort().reverse();
-
+        const months = Object.keys(globalMonths).sort().reverse();
         if (!months.length) {
-            document.getElementById('alertsContainer').innerHTML = `
-                <div class="alert-item info">ℹ️ لا توجد فواتير محفوظة بعد. ارفع فاتورة من تبويب "رفع فاتورة"</div>`;
+            document.getElementById('alertsContainer').innerHTML = `<div class="alert-item info">ℹ️ لا توجد فواتير سحابية بعد. يرجى رفع أول فاتورة لبدء عرض التنبيهات.</div>`;
             return;
         }
 
@@ -795,100 +773,80 @@
 
         // Overprice alerts
         const overItems = [];
-        for (let month of months)
-            for (let d of allMonths[month])
-                if (d.invoicePrice > d.myPrice) overItems.push({ ...d, month });
+        for (let m of months)
+            for (let d of globalMonths[m])
+                if (d.invoicePrice > d.myPrice) overItems.push({ ...d, month: m });
 
         html += `<div class="card"><div class="card-title">📈 فواتير أعلى من المتفق عليه</div>`;
         if (overItems.length) {
             for (let d of overItems) {
                 html += `<div class="alert-item warning">
                     <strong>${d.name} (0${d.phone}) — ${d.month}</strong>
-                    السعر المتفق عليه: ${d.myPrice} ج | الفاتورة: ${d.invoicePrice} ج<br>
-                    <span class="alert-badge badge-orange">زيادة ${(d.invoicePrice - d.myPrice).toFixed(2)} ج</span>
+                    المتفق عليه: ${d.myPrice} ج | الفاتورة طالعة: ${d.invoicePrice} ج<br>
+                    <span class="alert-badge badge-orange">زيادة بمقدار ${(d.invoicePrice - d.myPrice).toFixed(1)} ج</span>
                 </div>`;
             }
-        } else {
-            html += `<div class="alert-item success">✅ لا توجد فواتير أعلى من المتفق عليه</div>`;
-        }
+        } else { html += `<div class="alert-item success">✅ كل فواتير الخطوط مطابقة أو أقل من المتفق عليه.</div>`; }
         html += '</div>';
 
         // Debt alerts
         const debtMap = new Map();
-        for (let month of months) {
-            for (let d of allMonths[month]) {
+        for (let m of months) {
+            for (let d of globalMonths[m]) {
                 if (!d.paid && d.myPrice > 0) {
                     if (!debtMap.has(d.phone)) debtMap.set(d.phone, { name: d.name, phone: d.phone, months: [], totalDebt: 0 });
                     const entry = debtMap.get(d.phone);
-                    entry.months.push(month);
+                    entry.months.push(m);
                     entry.totalDebt += d.myPrice;
                 }
             }
         }
 
-        html += `<div class="card"><div class="card-title">💰 المديونيات</div>`;
+        html += `<div class="card"><div class="card-title">💰 المتأخرات والمديونيات الحالية</div>`;
         let hasDebt = false;
         for (let [, debt] of debtMap.entries()) {
             if (!debt.months.length) continue;
             hasDebt = true;
-            const count       = debt.months.length;
-            const badgeClass  = count >= 3 ? 'badge-red' : count === 2 ? 'badge-orange' : 'badge-yellow';
-            const severityText = count >= 3 ? `🔴 متأخر ${count} شهور` : count === 2 ? '🟠 متأخر شهرين' : '🟡 متأخر شهر';
-
+            const count = debt.months.length;
             html += `<div class="alert-item danger">
                 <strong>${debt.name} (0${debt.phone})</strong>
-                ${severityText} — الأشهر: ${debt.months.join(', ')}<br>
-                <span class="alert-badge ${badgeClass}">المطلوب: ${debt.totalDebt.toFixed(2)} ج</span>
+                متأخر في سداد عدد (${count}) أشهر: ${debt.months.join(', ')}<br>
+                <span class="alert-badge ${count >=3 ? 'badge-red':'badge-orange'}">إجمالي المديونية السحابية: ${debt.totalDebt.toFixed(0)} ج</span>
             </div>`;
         }
-        if (!hasDebt) html += `<div class="alert-item success">✅ جميع العملاء سدّدوا</div>`;
+        if (!hasDebt) html += `<div class="alert-item success">✅ ممتاز! تم تحصيل جميع مستحقات كل الشهور المرفوعة.</div>`;
         html += '</div>';
 
         document.getElementById('alertsContainer').innerHTML = html;
     }
 
-    /* ════════════════ Tabs ════════════════ */
-    function showTab(tabName, el) {
-        ['alerts','all','upload','settings'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
-        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+    function showTab(t, el) {
+        ['alerts','all','upload','settings'].forEach(id => document.getElementById(`tab-${id}`).classList.add('hidden'));
+        document.getElementById(`tab-${t}`).classList.remove('hidden');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        const activeBtn = el || document.querySelectorAll('.tab-btn')[['alerts','all','upload','settings'].indexOf(tabName)];
-        if (activeBtn) activeBtn.classList.add('active');
-        if (tabName === 'alerts') generateAlerts();
-        if (tabName === 'all')    loadMonth();
+        const targetBtn = el || document.querySelectorAll('.tab-btn')[['alerts','all','upload','settings'].indexOf(t)];
+        if (targetBtn) targetBtn.classList.add('active');
+        
+        if(t === 'all') loadMonth();
+        if(t === 'settings') renderManageTable();
+        if(t === 'alerts') generateAlerts();
     }
 
-    /* ════════════════ Misc ════════════════ */
-    function resetAllData() {
-        if (confirm("⚠️ هل أنت متأكد؟ سيتم مسح كل البيانات")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    function showToast(msg, type = 'success') {
+    function showToast(msg) {
         const t = document.createElement('div');
-        t.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-            background:${type === 'warning' ? '#f0a500' : '#1a9e4a'};color:white;
-            padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;
-            z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);`;
-        t.textContent = msg;
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 2800);
+        t.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a9e4a;color:white;padding:10px 20px;border-radius:20px;z-index:9999;font-size:13px;font-weight:600;";
+        t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
     }
 
-    /* ════════════════ Init ════════════════ */
     const now = new Date();
-    const ym  = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-    document.getElementById('monthPicker').value  = ym;
-    document.getElementById('uploadMonth').value  = ym;
-    loadNames();
-    generateAlerts();
+    const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    document.getElementById('monthPicker').value = ym;
+    document.getElementById('uploadMonth').value = ym;
 
-    // Upload file name display
+    loadCloudData();
+
     document.getElementById('pdfInput').addEventListener('change', function() {
-        const name = this.files[0]?.name || 'أو اسحب الملف هنا';
-        document.getElementById('uploadFileName').textContent = name;
+        document.getElementById('uploadFileName').textContent = this.files[0]?.name || 'اضغط لاختيار ملف PDF أو اسحبه هنا';
     });
 </script>
 </body>
