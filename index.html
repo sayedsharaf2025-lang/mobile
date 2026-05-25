@@ -125,9 +125,9 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
     </div>
 
     <div class="card">
-      <div class="card-title">📊 رفع فاتورة Excel تراكمية</div>
+      <div class="card-title">📊 رفع فاتورة Excel تراكمية للشيتات</div>
       <div class="alert-item success" style="margin-bottom:10px; font-size:12px; background: #e6f7ed; padding: 10px; border-radius: 6px;">
-        📌 <strong>قاعدة المعالجة:</strong> يتم استخراج البيانات بذكاء من ملف الـ Excel وربطها تصفحياً ولحظياً بالسيرفر.
+        📌 <strong>تحديث ذكي:</strong> يتم قراءة فواتير الموبايل والـ ADSL معاً، وفي حال وجود أكثر من فاتورة لنفس الرقم يتم جمع المبالغ تراكمياً.
       </div>
       <div class="upload-zone" style="border: 2px dashed var(--gray-mid); padding: 20px; text-align: center; border-radius: var(--radius);">
         <input type="file" id="invoiceXlsInput" accept=".xlsx,.xls" onchange="processInvoiceExcel(this)">
@@ -232,7 +232,7 @@ function showTab(tabName, btn) {
   if(btn) btn.classList.add('active');
 }
 
-// دالة ذكية ومطوّرة لقراءة محتويات ملف الإكسيل بأي مسميات أعمدة
+// الدالة الاحترافية الجديدة كلياً لمعالجة شيتات الفواتير المتعددة والتكرار التراكمي
 function processInvoiceExcel(input) {
   const file = input.files[0];
   const targetMonth = document.getElementById('uploadMonth').value;
@@ -241,74 +241,114 @@ function processInvoiceExcel(input) {
     return;
   }
   
-  document.getElementById('uploadStatus').textContent = "جاري فحص الأعمدة وتحليل بيانات الملف...";
+  document.getElementById('uploadStatus').textContent = "جاري قراءة وتحليل الشيتات (Voice & ADSL)...";
   const reader = new FileReader();
   
   reader.onload = function(e) {
     const data = new Uint8Array(e.target.result);
     const workbook = XLSX.read(data, {type: 'array'});
-    const sheetName = workbook.SheetNames[0];
-    const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    
-    if(json.length === 0) {
-      document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--red)">❌ الملف المرفوع فارغ تماماً من البيانات!</span>`;
-      return;
-    }
-
-    let addedCount = 0;
-    let skippedCount = 0;
     
     db.ref(`invoices/${targetMonth}`).once('value', snapshot => {
+      // جلب الفواتير الحالية المخزنة مسبقاً للسماح بالتراكم عليها
       const currentMonthBills = snapshot.val() || {};
-      
-      json.forEach(row => {
-        // البحث عن المفاتيح بذكاء ودعم كافة التسميات المتوقعة في شيت الإكسيل
-        let phoneKey = Object.keys(row).find(k => k.includes('الرقم') || k.includes('رقم') || k.includes('الهاتف') || k.includes('Phone') || k.includes('Mobile'));
-        let nameKey = Object.keys(row).find(k => k.includes('الاسم') || k.includes('اسم') || k.includes('Name') || k.includes('العميل'));
-        let pkgKey = Object.keys(row).find(k => k.includes('باقة') || k.includes('الباقة') || k.includes('خطة') || k.includes('Package') || k.includes('نظام'));
-        let priceKey = Object.keys(row).find(k => k.includes('سعر') || k.includes('المبلغ') || k.includes('الفاتورة') || k.includes('Price') || k.includes('الأساسي') || k.includes('المستحق') || k.includes('قيمة'));
+      let totalAddedLines = 0;
 
-        let phone = phoneKey ? String(row[phoneKey]).trim() : '';
-        let name = nameKey ? String(row[nameKey]).trim() : '';
-        let pkg = pkgKey ? String(row[pkgKey]).trim() : '';
-        let price = priceKey ? parseFloat(row[priceKey]) : 0;
+      // 1. معالجة الشيت الأول: Voice Lines Charges Summary
+      const voiceSheet = workbook.Sheets['Voice Lines Charges Summary'];
+      if (voiceSheet) {
+        // تحويل الشيت إلى مصفوفة صفوف ثنائية لتخطي الأسطر التمهيدية بدقة والوصول للجدول مباشرة
+        const rows = XLSX.utils.sheet_to_json(voiceSheet, {header: 1});
+        let headerIndex = rows.findIndex(r => r && (r[0] === 'Mobile Number' || String(r[0]).includes('الرقم')));
         
-        if (!phone || phone === 'undefined' || phone === 'null') return;
-        
-        // إزالة الفواصل أو العلامات العشرية المزعجة من تحويل أرقام الهواتف
-        if (phone.includes('.')) phone = phone.split('.')[0];
-        // تنظيف الصفر الأمامي لتوحيد القاعدة في الـ Firebase
-        if (phone.startsWith('0')) phone = phone.substring(1); 
-        
-        if (currentMonthBills[phone]) {
-          skippedCount++;
-        } else {
-          currentMonthBills[phone] = {
-            phone: phone,
-            name: name && name !== 'undefined' ? name : (clientsDatabase[phone]?.name || "عميل غير مسجل"),
-            package: pkg && pkg !== 'undefined' ? pkg : (clientsDatabase[phone]?.packageType || "باقة افتراضية"),
-            requiredAmount: parseFloat((price * 1.45).toFixed(2)), 
-            paidAmount: 0,
-            isPaid: false,
-            prepaidDeducted: 0
-          };
-          
-          if (!clientsDatabase[phone] && name && name !== 'undefined') {
-            db.ref(`clients/${phone}`).set({
-              name: name,
-              packageType: pkg && pkg !== 'undefined' ? pkg : "باقة افتراضية",
-              basePrice: price
-            });
+        if (headerIndex !== -1) {
+          // قراءة البيانات من بعد السطر الخاص بالعناوين
+          for (let i = headerIndex + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row[0]) continue; // تخطي الصفوف الفارغة
+            
+            let phone = String(row[0]).trim().split('.')[0]; // العمود الأول A
+            let pkg = row[1] ? String(row[1]).trim() : "باقة مرنة"; // العمود الثاني B
+            let price = parseFloat(row[9]) || 0; // العمود العاشر J (اندكس 9) هو القيمة بعد الضريبة
+            let name = row[10] ? String(row[10]).trim() : ""; // العمود الحادي عشر K هو الاسم
+
+            if (!phone || phone === 'undefined') continue;
+            if (phone.startsWith('0')) phone = phone.substring(1);
+
+            // ميزة التراكم: إذا كان الرقم نزل له فاتورة مسبقاً في هذا الشهر، اجمع القيمة الجديدة عليها
+            if (currentMonthBills[phone]) {
+              currentMonthBills[phone].requiredAmount = parseFloat((currentMonthBills[phone].requiredAmount + price).toFixed(2));
+            } else {
+              currentMonthBills[phone] = {
+                phone: phone,
+                name: name || clientsDatabase[phone]?.name || "عميل فودافون",
+                package: pkg,
+                requiredAmount: parseFloat(price.toFixed(2)),
+                paidAmount: 0,
+                isPaid: false,
+                prepaidDeducted: 0
+              };
+            }
+
+            // إضافة العميل لقاعدة البيانات الأساسية إن لم يكن موجوداً
+            if (name && (!clientsDatabase[phone] || clientsDatabase[phone].name.includes('عميل'))) {
+              db.ref(`clients/${phone}`).update({ name: name, packageType: pkg });
+            }
+            totalAddedLines++;
           }
-          addedCount++;
         }
-      });
-      
-      db.ref(`invoices/${targetMonth}`).update(currentMonthBills).then(() => {
-        document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--green)">✅ اكتمل الحفظ! تم إضافة ${addedCount} خط بنجاح، وتخطي ${skippedCount} مكررين.</span>`;
-        // محاكاة نقرة لتحديث العرض الحالي للمستخدم فوراً
-        loadMonthData();
-      });
+      }
+
+      // 2. معالجة الشيت الثاني: ADSL Lines Charges
+      const adslSheet = workbook.Sheets['ADSL Lines Charges'];
+      if (adslSheet) {
+        const rows = XLSX.utils.sheet_to_json(adslSheet, {header: 1});
+        let headerIndex = rows.findIndex(r => r && (r[0] === 'ADSL Number' || String(r[0]).includes('رقم')));
+        
+        if (headerIndex !== -1) {
+          for (let i = headerIndex + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row[0]) continue;
+            
+            let phone = String(row[0]).trim().split('.')[0]; // العمود الأول A
+            let pkg = row[1] ? String(row[1]).trim() : "إنترنت منزلي ADSL"; // العمود الثاني B
+            let price = parseFloat(row[5]) || 0; // العمود السادس F (اندكس 5) القيمة بعد الضريبة
+            let name = row[6] ? String(row[6]).trim() : ""; // العمود السابع G هو الاسم
+
+            if (!phone || phone === 'undefined') continue;
+            if (phone.startsWith('0')) phone = phone.substring(1);
+
+            // التراكم لخطوط الـ ADSL أيضاً
+            if (currentMonthBills[phone]) {
+              currentMonthBills[phone].requiredAmount = parseFloat((currentMonthBills[phone].requiredAmount + price).toFixed(2));
+            } else {
+              currentMonthBills[phone] = {
+                phone: phone,
+                name: name || clientsDatabase[phone]?.name || "عميل ADSL",
+                package: pkg,
+                requiredAmount: parseFloat(price.toFixed(2)),
+                paidAmount: 0,
+                isPaid: false,
+                prepaidDeducted: 0
+              };
+            }
+
+            if (name && (!clientsDatabase[phone] || clientsDatabase[phone].name.includes('عميل'))) {
+              db.ref(`clients/${phone}`).update({ name: name, packageType: pkg });
+            }
+            totalAddedLines++;
+          }
+        }
+      }
+
+      // حفظ البيانات المجمعة والتراكمية على السيرفر
+      if (totalAddedLines > 0) {
+        db.ref(`invoices/${targetMonth}`).update(currentMonthBills).then(() => {
+          document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--green)">✅ اكتمل بنجاح! تم معالجة وتحديث الفواتير بشكل تراكمي لـ (${totalAddedLines}) سجل بنجاح لشهر ${targetMonth}.</span>`;
+          loadMonthData();
+        });
+      } else {
+        document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--red)">❌ فشل العثور على جداول البيانات داخل الشيتات المحددة. تأكد من سلامة الملف.</span>`;
+      }
     });
   };
   
@@ -355,7 +395,7 @@ function searchClientForPayment() {
       item.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <strong>👤 ${client.name}</strong><br>
+            <strong>👤 ${client.name}</strong> (${client.packageType || 'مكالمات / نت'})<br>
             <span style="color:var(--gray-dark)">📱 الرقم: 0${phone}</span> | <span style="color:var(--blue)">💳 مقدم: ${prepaidBalance} ج</span>
           </div>
           <div>${invoiceStatusHtml}</div>
@@ -367,7 +407,7 @@ function searchClientForPayment() {
   }
   
   if (!found) {
-    resultArea.innerHTML = `<div style="color:var(--gray-dark); text-align:center; padding:10px;">لم يتم العثور على أي نتائج.</div>`;
+    resultArea.innerHTML = `<div style="color:var(--gray-dark); text-align:center; padding:10px;">لم يتم العثور على نتائج.</div>`;
   }
 }
 
@@ -494,6 +534,7 @@ function loadMonthData() {
         <div>
           <span class="lc-name">${bill.name}</span>
           <div class="lc-phone">0${bill.phone}</div>
+          <div style="font-size:11px; color:var(--gray-dark)">📋 نوع الباقة: ${bill.package}</div>
         </div>
         <span class="lc-badge ${bill.isPaid ? 'badge-paid' : 'badge-unpaid'}">
           ${bill.isPaid ? 'مدفوع كامل' : (bill.paidAmount > 0 ? 'مدفوع جزئي' : 'لم يدفع')}
@@ -521,7 +562,7 @@ function renderBaseLinesTable() {
   for (let phone in clientsDatabase) {
     const c = clientsDatabase[phone];
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${c.name}</td><td>0${phone}</td><td>${c.packageType || 'باقة افتراضية'}</td><td>${c.basePrice || 0} ج</td>`;
+    tr.innerHTML = `<td>${c.name}</td><td>0${phone}</td><td>${c.packageType || 'باقة'}</td><td>${c.basePrice || 0} ج</td>`;
     tbody.appendChild(tr);
   }
 }
