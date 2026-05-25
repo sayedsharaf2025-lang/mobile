@@ -2,570 +2,609 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>نظام فودافون للتحصيل - Firebase</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام فودافون للتحصيل المطور</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-:root {
-  --red:#e60000;--red-dark:#b80000;--red-light:#fff0f0;
-  --green:#1a9e4a;--green-light:#edfaf3;
-  --yellow:#f0a500;--yellow-light:#fff8e6;
-  --blue:#0077cc;--blue-light:#e8f4ff;
-  --gray:#f5f6f8;--gray-mid:#e0e3e9;--gray-dark:#6b7280;
-  --text:#1a1d23;--white:#fff;
-  --radius:14px;--radius-sm:8px;
-  --shadow:0 2px 12px rgba(0,0,0,.08);
-  --shadow-lg:0 8px 32px rgba(0,0,0,.13);
+body{
+font-family:Tahoma;
+background:#f5f5f5;
+margin:0;
+padding-bottom:80px;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',Tahoma,sans-serif;background:#eef0f5;min-height:100vh;color:var(--text);padding-bottom:80px;}
-.app-header{background:var(--red);color:white;padding:14px 18px 10px;position:sticky;top:0;z-index:200;box-shadow:0 2px 10px rgba(230,0,0,.3);display:flex;justify-content:space-between;align-items:center;}
-.app-header h1{font-size:clamp(13px,4vw,18px);font-weight:700;}
-.hdr-sub{font-size:11px;opacity:.85;margin-top:1px;}
-.tab-bar{display:flex;background:var(--white);border-top:1px solid var(--gray-mid);position:fixed;bottom:0;left:0;right:0;z-index:200;box-shadow:0 -2px 12px rgba(0,0,0,.08);}
-.tab-btn{flex:1;padding:9px 4px 7px;font-size:10px;font-weight:600;color:var(--gray-dark);background:none;border:none;border-top:3px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .18s;font-family:inherit;}
-.tab-btn .ti{font-size:19px;}
-.tab-btn.active{color:var(--red);border-top-color:var(--red);}
-.main{padding:14px;max-width:720px;margin:0 auto;}
-.card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);}
-.card-title{font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--red);display:flex;align-items:center;gap:6px;}
-label{font-size:12px;font-weight:600;color:var(--gray-dark);display:block;margin:10px 0 4px;}
-input[type=text],input[type=number],input[type=month],select{width:100%;padding:10px 12px;border:1.5px solid var(--gray-mid);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;color:var(--text);background:var(--white);transition:border-color .2s;}
-input:focus,select:focus{outline:none;border-color:var(--red);}
-.btn{width:100%;padding:11px 16px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;transition:all .18s;}
-.btn:active{transform:scale(.97);}
-.btn-red{background:var(--red);color:white;}
-.btn-green{background:var(--green);color:white;}
-.btn-blue{background:var(--blue);color:white;}
-.btn-gray{background:var(--gray);color:var(--text);}
-.btn-orange{background:#f97316;color:white;}
-.btn-sm{padding:5px 10px;font-size:12px;margin-top:0;width:auto;display:inline-flex;}
-.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
-.stat-box{background:var(--gray);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;}
-.stat-val{font-size:clamp(15px,4vw,20px);font-weight:700;color:var(--red);display:block;}
-.stat-lbl{font-size:11px;color:var(--gray-dark);margin-top:3px;}
-.stat-box.green .stat-val{color:var(--green);}
-.stat-box.blue .stat-val{color:var(--blue);}
-.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px;}
-.chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gray-mid);background:var(--white);color:var(--gray-dark);cursor:pointer;transition:all .18s;white-space:nowrap;}
-.chip.active{background:var(--red);color:white;border-color:var(--red);}
-.line-card{background:var(--white);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--gray-mid);}
-.line-card.paid{border-color:#86efac;background:#f0fdf4;}
-.line-card.unpaid{border-color:#fca5a5;background:#fff5f5;}
-.line-card.partial{border-color:#fcd34d;background:#fffbeb;}
-.lc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
-.lc-name{font-size:14px;font-weight:700;}
-.lc-phone{font-size:12px;color:var(--gray-dark);direction:ltr;text-align:right;}
-.lc-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;}
-.badge-paid{background:var(--green-light);color:var(--green);}
-.badge-unpaid{background:#fee2e2;color:var(--red);}
-.badge-partial{background:var(--yellow-light);color:var(--yellow);}
-.lc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;}
-.ls{background:var(--gray);border-radius:6px;padding:5px 4px;text-align:center;}
-.ls-v{font-size:12px;font-weight:700;color:var(--text);}
-.ls-l{font-size:9px;color:var(--gray-dark);}
-.mtable-wrap{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--gray-mid);}
-.mtable{width:100%;border-collapse:collapse;font-size:13px;min-width:520px;}
-.mtable th,.mtable td{padding:9px 8px;border-bottom:1px solid var(--gray-mid);text-align:center;}
-.mtable th{background:var(--gray);font-weight:700;}
-.row-g{display:flex;gap:8px;align-items:center;}
-.row-g input,.row-g select{flex:1;margin:0;}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;}
-.modal-box{background:var(--white);border-radius:var(--radius);padding:20px;width:100%;max-width:420px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto;}
-.modal-title{font-size:15px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--blue);}
-.modal-actions{display:flex;gap:8px;margin-top:14px;}.modal-actions .btn{margin-top:0;flex:1;}
-.hidden{display:none!important;}
-.search-res-item { background: var(--gray); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 8px; border: 1px solid var(--gray-mid); }
+header{
+background:#e60000;
+color:#fff;
+padding:15px;
+font-size:20px;
+font-weight:bold;
+position:sticky;
+top:0;
+z-index:999;
+}
+.container{
+padding:10px;
+}
+.card{
+background:#fff;
+border-radius:12px;
+padding:15px;
+margin-bottom:12px;
+box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+.card h3{
+margin-top:0;
+color:#e60000;
+}
+input,select,button{
+width:100%;
+padding:10px;
+margin-top:8px;
+border-radius:8px;
+border:1px solid #ccc;
+font-size:14px;
+}
+button{
+background:#e60000;
+color:#fff;
+border:none;
+font-weight:bold;
+cursor:pointer;
+}
+button:hover{
+opacity:.9;
+}
+.table-wrap{
+overflow:auto;
+}
+table{
+width:100%;
+border-collapse:collapse;
+min-width:700px;
+}
+th,td{
+padding:8px;
+border:1px solid #ddd;
+text-align:center;
+}
+th{
+background:#e60000;
+color:#fff;
+}
+.badge-paid{background:#22c55e;color:#fff;padding:4px 8px;border-radius:20px;}
+.badge-unpaid{background:#ef4444;color:#fff;padding:4px 8px;border-radius:20px;}
+.badge-partial{background:#f59e0b;color:#fff;padding:4px 8px;border-radius:20px;}
+.tabbar{
+position:fixed;
+bottom:0;
+right:0;
+left:0;
+display:flex;
+background:#fff;
+border-top:1px solid #ccc;
+}
+.tabbar button{
+flex:1;
+border-radius:0;
+margin:0;
+background:#fff;
+color:#333;
+border:none;
+padding:12px;
+}
+.tabbar button.active{
+background:#e60000;
+color:#fff;
+}
+.hidden{display:none;}
+.flex{
+display:flex;
+gap:10px;
+}
 </style>
 </head>
 <body>
 
-<div class="app-header">
-  <div>
-    <h1>📱 نظام فودافون للتحصيل الذكي (Firebase)</h1>
-    <div class="hdr-sub" id="hdrSub">جاري الاتصال بقاعدة البيانات...</div>
-  </div>
+<header>
+📱 نظام فودافون للتحصيل المطور
+</header>
+
+<div class="container">
+
+<div id="tab-search">
+<div class="card">
+<h3>🔍 البحث والتحصيل</h3>
+<input type="text" id="searchInput" placeholder="ابحث بالاسم أو الرقم" oninput="searchClient()">
+<div id="searchResults"></div>
+</div>
 </div>
 
-<div class="main">
+<div id="tab-lines" class="hidden">
+<div class="card">
+<h3>📋 الخطوط المفوترة</h3>
+<input type="month" id="invoiceMonth">
+<button onclick="loadInvoices()">عرض الفواتير</button>
+<button onclick="payAllInvoices()">تحصيل جميع الخطوط</button>
+</div>
 
-  <div id="tab-alerts">
-    <div class="card" style="border: 2px solid var(--blue); background: #fafcff;">
-      <div class="card-title" style="color: var(--blue); border-bottom-color: var(--blue);">💰 شاشة البحث والدفع السريع والمقدم</div>
-      <p style="color: var(--gray-dark); font-size: 12px; margin-bottom: 10px;">ابحث عن العميل بالاسم أو الرقم لتسجيل الفواتير أو دفع رصيد مقدم (يُخصم بعد نزول الفاتورة).</p>
-      <input type="text" id="quickSearchInput" placeholder="🔍 اكتب اسم العميل أو رقم الخط للبحث..." oninput="searchClientForPayment()" style="border-color: var(--blue);">
-      <div id="quickSearchResultArea" style="margin-top: 12px; max-height: 350px; overflow-y: auto;"></div>
-    </div>
-    <div id="alertsContainer"></div>
-  </div>
+<div class="card table-wrap">
+<table>
+<thead>
+<tr>
+<th>الاسم</th>
+<th>الرقم</th>
+<th>الشهر</th>
+<th>الباقة</th>
+<th>المطلوب</th>
+<th>المدفوع</th>
+<th>المتبقي</th>
+<th>الحالة</th>
+<th>إجراء</th>
+</tr>
+</thead>
+<tbody id="invoiceTable"></tbody>
+</table>
+</div>
+</div>
 
-  <div id="tab-lines" class="hidden">
-    <div class="card">
-      <div class="row-g">
-        <input type="month" id="monthPicker">
-        <button class="btn btn-gray" onclick="loadMonthData()" style="margin-top:0;">عرض الخطوط</button>
-      </div>
-    </div>
-    <div id="statsGrid" class="stats-grid"></div>
-    <div id="lineCardsWrap"></div>
-  </div>
+<div id="tab-upload" class="hidden">
+<div class="card">
+<h3>📤 رفع الفواتير</h3>
+<input type="month" id="uploadMonth">
+<input type="file" id="invoiceFiles" multiple accept=".xlsx,.xls">
+<button onclick="processInvoices()">رفع الفواتير</button>
+<div id="uploadStatus"></div>
+</div>
+</div>
 
-  <div id="tab-upload" class="hidden">
-    <div class="card">
-      <div class="card-title">📅 تحديد شهر الفاتورة</div>
-      <input type="month" id="uploadMonth">
-    </div>
+<div id="tab-clients" class="hidden">
+<div class="card">
+<h3>👥 بيانات الخطوط</h3>
+<input type="file" id="clientsExcel" accept=".xlsx,.xls">
+<button onclick="importClientsExcel()">استيراد Excel</button>
+</div>
 
-    <div class="card">
-      <div class="card-title">📊 رفع فاتورة Excel تراكمية للشيتات</div>
-      <div class="alert-item success" style="margin-bottom:10px; font-size:12px; background: #e6f7ed; padding: 10px; border-radius: 6px;">
-        📌 <strong>تحديث ذكي:</strong> يتم قراءة فواتير الموبايل والـ ADSL معاً، وفي حال وجود أكثر من فاتورة لنفس الرقم يتم جمع المبالغ تراكمياً.
-      </div>
-      <div class="upload-zone" style="border: 2px dashed var(--gray-mid); padding: 20px; text-align: center; border-radius: var(--radius);">
-        <input type="file" id="invoiceXlsInput" accept=".xlsx,.xls" onchange="processInvoiceExcel(this)">
-        <div class="uz-title" id="xlsTitle">اضغط هنا لرفع ملف Excel الفاتورة</div>
-      </div>
-      <div id="uploadStatus" style="margin-top:10px; font-weight:700;"></div>
-    </div>
-  </div>
+<div class="card">
+<h3>➕ إضافة خط</h3>
+<input type="text" id="clientName" placeholder="الاسم">
+<input type="text" id="clientPhone" placeholder="الرقم">
+<select id="clientPackage"></select>
+<input type="number" id="clientPrice" placeholder="السعر">
+<button onclick="saveClient()">حفظ</button>
+</div>
 
-  <div id="tab-settings" class="hidden">
-    <div class="card">
-      <div class="card-title">📋 الخطوط الأساسية المسجلة للنظام</div>
-      <div class="mtable-wrap">
-        <table class="mtable">
-          <thead>
-            <tr><th>الاسم</th><th>الرقم</th><th>الباقة</th><th>السعر الأساسي</th></tr>
-          </thead>
-          <tbody id="manageBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+<div class="card table-wrap">
+<table>
+<thead>
+<tr>
+<th>الاسم</th>
+<th>الرقم</th>
+<th>الباقة</th>
+<th>السعر</th>
+<th>إجراء</th>
+</tr>
+</thead>
+<tbody id="clientsTable"></tbody>
+</table>
+</div>
+</div>
+
+<div id="tab-packages" class="hidden">
+<div class="card">
+<h3>💳 أسعار الباقات</h3>
+<div class="flex">
+<select id="packageName"></select>
+<input type="number" id="packagePrice" placeholder="السعر">
+</div>
+<button onclick="savePackagePrice()">حفظ السعر</button>
+</div>
+
+<div class="card table-wrap">
+<table>
+<thead>
+<tr>
+<th>الباقة</th>
+<th>السعر</th>
+</tr>
+</thead>
+<tbody id="packagesTable"></tbody>
+</table>
+</div>
+</div>
 
 </div>
 
-<div class="tab-bar">
-  <button class="tab-btn active" onclick="showTab('alerts',this)"><span class="ti">🔍</span>البحث والتحصيل</button>
-  <button class="tab-btn" onclick="showTab('lines',this)"><span class="ti">📋</span>الخطوط المفوترة</button>
-  <button class="tab-btn" onclick="showTab('upload',this)"><span class="ti">📎</span>رفع فاتورة</button>
-  <button class="tab-btn" onclick="showTab('settings',this)"><span class="ti">⚙️</span>بيانات الخطوط</button>
-</div>
-
-<div id="prepaidModal" class="modal-bg hidden">
-  <div class="modal-box">
-    <div class="modal-title">💳 تسجيل دفع مقدم (رصيد حساب)</div>
-    <input type="hidden" id="prepaidPhone">
-    <div id="prepaidClientName" style="font-weight: 700; margin-bottom: 10px;"></div>
-    <label>المبلغ المراد دفعه كمقدم</label>
-    <input type="number" id="prepaidAmount" placeholder="أدخل قيمة المبلغ">
-    <div class="modal-actions">
-      <button class="btn btn-blue" onclick="submitPrepaidPayment()">تسجيل رصيد مقدم</button>
-      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
-    </div>
-  </div>
-</div>
-
-<div id="payModal" class="modal-bg hidden">
-  <div class="modal-box">
-    <div class="modal-title">💵 تسجيل تحصيل فاتورة</div>
-    <input type="hidden" id="payPhone">
-    <div id="payClientInfo" style="font-weight: 700; margin-bottom: 10px;"></div>
-    <label>المبلغ المدفوع</label>
-    <input type="number" id="payAmount" placeholder="أدخل المبلغ المدفوع">
-    <div class="modal-actions">
-      <button class="btn btn-green" onclick="submitBillPayment()">تأكيد التحصيل</button>
-      <button class="btn btn-gray" onclick="closeModal()">إلغاء</button>
-    </div>
-  </div>
+<div class="tabbar">
+<button class="active" onclick="showTab('search',this)">بحث</button>
+<button onclick="showTab('lines',this)">الفواتير</button>
+<button onclick="showTab('upload',this)">رفع</button>
+<button onclick="showTab('clients',this)">الخطوط</button>
+<button onclick="showTab('packages',this)">الباقات</button>
 </div>
 
 <script>
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBfFRxvmhg8aqtuDgXAOofFGpVPklUF-gs",
-  authDomain: "mobile-invoic-118d4.firebaseapp.com",
-  projectId: "mobile-invoic-118d4",
-  databaseURL: "https://mobile-invoic-118d4-default-rtdb.firebaseio.com/",
-  storageBucket: "mobile-invoic-118d4.firebasestorage.app",
-  messagingSenderId: "795305971254",
-  appId: "1:795305971254:web:7e8e874cfd805d33ec1297",
-  measurementId: "G-YSV31DFCB4"
+apiKey: "AIzaSyBfFRxvmhg8aqtuDgXAOofFGpVPklUF-gs",
+authDomain: "mobile-invoic-118d4.firebaseapp.com",
+projectId: "mobile-invoic-118d4",
+databaseURL: "https://mobile-invoic-118d4-default-rtdb.firebaseio.com/",
+storageBucket: "mobile-invoic-118d4.firebasestorage.app",
+messagingSenderId: "795305971254",
+appId: "1:795305971254:web:7e8e874cfd805d33ec1297"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let clientsDatabase = {}; 
-let monthlyInvoices = {};  
-let currentSelectedMonth = "";
+let clients = {};
+let invoices = {};
+let packagePrices = {};
 
-window.onload = function() {
-  const now = new Date();
-  currentSelectedMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  document.getElementById('monthPicker').value = currentSelectedMonth;
-  document.getElementById('uploadMonth').value = currentSelectedMonth;
-  
-  db.ref('clients').on('value', snapshot => {
-    clientsDatabase = snapshot.val() || {};
-    renderBaseLinesTable();
-    document.getElementById('hdrSub').textContent = "متصل بقاعدة بيانات Firebase المباشرة";
-  });
+const packageList = [
+"Flex 45 Revamp",
+"Flex 52 Revamp",
+"Flex 60 Revamp",
+"Flex 90 Revamp",
+"Flex 125 Revamp",
+"2022 Business Flex 65",
+"2025 Business Flex 70",
+"2025 Business Flex 100",
+"2025 Business Flex 150",
+"Free SPOC Flex45"
+];
 
-  db.ref('invoices').on('value', snapshot => {
-    monthlyInvoices = snapshot.val() || {};
-    loadMonthData();
-  });
+function initPackages(){
+const select1=document.getElementById('clientPackage');
+const select2=document.getElementById('packageName');
+
+packageList.forEach(p=>{
+select1.innerHTML += `<option value="${p}">${p}</option>`;
+select2.innerHTML += `<option value="${p}">${p}</option>`;
+});
+}
+
+function showTab(tab,btn){
+['search','lines','upload','clients','packages'].forEach(t=>{
+document.getElementById('tab-'+t).classList.add('hidden');
+});
+
+document.getElementById('tab-'+tab).classList.remove('hidden');
+
+document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+}
+
+function loadData(){
+db.ref('clients').on('value',s=>{
+clients=s.val()||{};
+renderClients();
+});
+
+ db.ref('invoices').on('value',s=>{
+invoices=s.val()||{};
+});
+
+ db.ref('packagePrices').on('value',s=>{
+packagePrices=s.val()||{};
+renderPackages();
+});
+}
+
+function saveClient(){
+const name=document.getElementById('clientName').value;
+let phone=document.getElementById('clientPhone').value;
+const packageType=document.getElementById('clientPackage').value;
+const basePrice=parseFloat(document.getElementById('clientPrice').value)||0;
+
+phone=phone.replace(/^0/, '');
+
+if(!phone) return alert('أدخل الرقم');
+
+const data={
+name,
+packageType,
+basePrice,
+prepaidBalance:0
 };
 
-function showTab(tabName, btn) {
-  ['alerts', 'lines', 'upload', 'settings'].forEach(id => document.getElementById('tab-' + id).classList.add('hidden'));
-  document.getElementById('tab-' + tabName).classList.remove('hidden');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
+ db.ref('clients/'+phone).update(data).then(()=>{
+alert('تم الحفظ');
+});
 }
 
-// الدالة الاحترافية الجديدة كلياً لمعالجة شيتات الفواتير المتعددة والتكرار التراكمي
-function processInvoiceExcel(input) {
-  const file = input.files[0];
-  const targetMonth = document.getElementById('uploadMonth').value;
-  if (!file || !targetMonth) {
-    alert("يرجى اختيار الملف وتحديد الشهر أولاً!");
-    return;
-  }
-  
-  document.getElementById('uploadStatus').textContent = "جاري قراءة وتحليل الشيتات (Voice & ADSL)...";
-  const reader = new FileReader();
-  
-  reader.onload = function(e) {
-    const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, {type: 'array'});
-    
-    db.ref(`invoices/${targetMonth}`).once('value', snapshot => {
-      // جلب الفواتير الحالية المخزنة مسبقاً للسماح بالتراكم عليها
-      const currentMonthBills = snapshot.val() || {};
-      let totalAddedLines = 0;
+function renderClients(){
+const tbody=document.getElementById('clientsTable');
+tbody.innerHTML='';
 
-      // 1. معالجة الشيت الأول: Voice Lines Charges Summary
-      const voiceSheet = workbook.Sheets['Voice Lines Charges Summary'];
-      if (voiceSheet) {
-        // تحويل الشيت إلى مصفوفة صفوف ثنائية لتخطي الأسطر التمهيدية بدقة والوصول للجدول مباشرة
-        const rows = XLSX.utils.sheet_to_json(voiceSheet, {header: 1});
-        let headerIndex = rows.findIndex(r => r && (r[0] === 'Mobile Number' || String(r[0]).includes('الرقم')));
-        
-        if (headerIndex !== -1) {
-          // قراءة البيانات من بعد السطر الخاص بالعناوين
-          for (let i = headerIndex + 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || !row[0]) continue; // تخطي الصفوف الفارغة
-            
-            let phone = String(row[0]).trim().split('.')[0]; // العمود الأول A
-            let pkg = row[1] ? String(row[1]).trim() : "باقة مرنة"; // العمود الثاني B
-            let price = parseFloat(row[9]) || 0; // العمود العاشر J (اندكس 9) هو القيمة بعد الضريبة
-            let name = row[10] ? String(row[10]).trim() : ""; // العمود الحادي عشر K هو الاسم
+Object.keys(clients).forEach(phone=>{
+const c=clients[phone];
 
-            if (!phone || phone === 'undefined') continue;
-            if (phone.startsWith('0')) phone = phone.substring(1);
-
-            // ميزة التراكم: إذا كان الرقم نزل له فاتورة مسبقاً في هذا الشهر، اجمع القيمة الجديدة عليها
-            if (currentMonthBills[phone]) {
-              currentMonthBills[phone].requiredAmount = parseFloat((currentMonthBills[phone].requiredAmount + price).toFixed(2));
-            } else {
-              currentMonthBills[phone] = {
-                phone: phone,
-                name: name || clientsDatabase[phone]?.name || "عميل فودافون",
-                package: pkg,
-                requiredAmount: parseFloat(price.toFixed(2)),
-                paidAmount: 0,
-                isPaid: false,
-                prepaidDeducted: 0
-              };
-            }
-
-            // إضافة العميل لقاعدة البيانات الأساسية إن لم يكن موجوداً
-            if (name && (!clientsDatabase[phone] || clientsDatabase[phone].name.includes('عميل'))) {
-              db.ref(`clients/${phone}`).update({ name: name, packageType: pkg });
-            }
-            totalAddedLines++;
-          }
-        }
-      }
-
-      // 2. معالجة الشيت الثاني: ADSL Lines Charges
-      const adslSheet = workbook.Sheets['ADSL Lines Charges'];
-      if (adslSheet) {
-        const rows = XLSX.utils.sheet_to_json(adslSheet, {header: 1});
-        let headerIndex = rows.findIndex(r => r && (r[0] === 'ADSL Number' || String(r[0]).includes('رقم')));
-        
-        if (headerIndex !== -1) {
-          for (let i = headerIndex + 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || !row[0]) continue;
-            
-            let phone = String(row[0]).trim().split('.')[0]; // العمود الأول A
-            let pkg = row[1] ? String(row[1]).trim() : "إنترنت منزلي ADSL"; // العمود الثاني B
-            let price = parseFloat(row[5]) || 0; // العمود السادس F (اندكس 5) القيمة بعد الضريبة
-            let name = row[6] ? String(row[6]).trim() : ""; // العمود السابع G هو الاسم
-
-            if (!phone || phone === 'undefined') continue;
-            if (phone.startsWith('0')) phone = phone.substring(1);
-
-            // التراكم لخطوط الـ ADSL أيضاً
-            if (currentMonthBills[phone]) {
-              currentMonthBills[phone].requiredAmount = parseFloat((currentMonthBills[phone].requiredAmount + price).toFixed(2));
-            } else {
-              currentMonthBills[phone] = {
-                phone: phone,
-                name: name || clientsDatabase[phone]?.name || "عميل ADSL",
-                package: pkg,
-                requiredAmount: parseFloat(price.toFixed(2)),
-                paidAmount: 0,
-                isPaid: false,
-                prepaidDeducted: 0
-              };
-            }
-
-            if (name && (!clientsDatabase[phone] || clientsDatabase[phone].name.includes('عميل'))) {
-              db.ref(`clients/${phone}`).update({ name: name, packageType: pkg });
-            }
-            totalAddedLines++;
-          }
-        }
-      }
-
-      // حفظ البيانات المجمعة والتراكمية على السيرفر
-      if (totalAddedLines > 0) {
-        db.ref(`invoices/${targetMonth}`).update(currentMonthBills).then(() => {
-          document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--green)">✅ اكتمل بنجاح! تم معالجة وتحديث الفواتير بشكل تراكمي لـ (${totalAddedLines}) سجل بنجاح لشهر ${targetMonth}.</span>`;
-          loadMonthData();
-        });
-      } else {
-        document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--red)">❌ فشل العثور على جداول البيانات داخل الشيتات المحددة. تأكد من سلامة الملف.</span>`;
-      }
-    });
-  };
-  
-  reader.readAsArrayBuffer(file);
+tbody.innerHTML += `
+<tr>
+<td>${c.name||''}</td>
+<td>0${phone}</td>
+<td>${c.packageType||''}</td>
+<td>${c.basePrice||0}</td>
+<td>
+<button onclick="editClient('${phone}')">تعديل</button>
+<button onclick="deleteClient('${phone}')">حذف</button>
+</td>
+</tr>`;
+});
 }
 
-function searchClientForPayment() {
-  const query = document.getElementById('quickSearchInput').value.trim().toLowerCase();
-  const resultArea = document.getElementById('quickSearchResultArea');
-  resultArea.innerHTML = "";
-  
-  if (!query) return;
-  
-  let searchNum = query;
-  if (searchNum.startsWith('0')) searchNum = searchNum.substring(1);
+function deleteClient(phone){
+if(!confirm('هل تريد حذف الخط؟')) return;
 
-  const targetMonth = document.getElementById('monthPicker').value;
-  const currentMonthBills = monthlyInvoices[targetMonth] || {};
-  
-  let found = false;
-  
-  for (let phone in clientsDatabase) {
-    const client = clientsDatabase[phone];
-    if (client.name.toLowerCase().includes(query) || phone.includes(searchNum)) {
-      found = true;
-      const invoice = currentMonthBills[phone];
-      const prepaidBalance = client.prepaidBalance || 0;
-      
-      let invoiceStatusHtml = `<span style="color:var(--red); font-weight:700;">لا توجد فاتورة لشهر ${targetMonth}</span>`;
-      let actionButtons = `<button class="btn btn-blue btn-sm" onclick="openPrepaidModal('${phone}', '${client.name}')">💳 دفع رصيد مقدم</button>`;
-      
-      if (invoice) {
-        const remaining = (invoice.requiredAmount - invoice.paidAmount).toFixed(2);
-        if (invoice.isPaid) {
-          invoiceStatusHtml = `<span style="color:var(--green); font-weight:700;">✅ الفاتورة مدفوعة</span>`;
-        } else {
-          invoiceStatusHtml = `<span style="color:var(--yellow); font-weight:700;">⚠️ مستحق: ${remaining} ج.م</span>`;
-          actionButtons += ` <button class="btn btn-green btn-sm" onclick="openPayModal('${phone}', '${client.name}', ${remaining})">💵 تحصيل</button>`;
-        }
-      }
-      
-      const item = document.createElement('div');
-      item.className = 'search-res-item';
-      item.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <strong>👤 ${client.name}</strong> (${client.packageType || 'مكالمات / نت'})<br>
-            <span style="color:var(--gray-dark)">📱 الرقم: 0${phone}</span> | <span style="color:var(--blue)">💳 مقدم: ${prepaidBalance} ج</span>
-          </div>
-          <div>${invoiceStatusHtml}</div>
-        </div>
-        <div style="margin-top:10px; display:flex; gap:6px; justify-content:flex-end;">${actionButtons}</div>
-      `;
-      resultArea.appendChild(item);
-    }
-  }
-  
-  if (!found) {
-    resultArea.innerHTML = `<div style="color:var(--gray-dark); text-align:center; padding:10px;">لم يتم العثور على نتائج.</div>`;
-  }
+ db.ref('clients/'+phone).remove().then(()=>{
+alert('تم الحذف');
+});
 }
 
-function openPrepaidModal(phone, name) {
-  document.getElementById('prepaidPhone').value = phone;
-  document.getElementById('prepaidClientName').textContent = name;
-  document.getElementById('prepaidAmount').value = "";
-  document.getElementById('prepaidModal').classList.remove('hidden');
+function editClient(phone){
+const c=clients[phone];
+
+document.getElementById('clientName').value=c.name||'';
+document.getElementById('clientPhone').value=phone;
+document.getElementById('clientPackage').value=c.packageType||'';
+document.getElementById('clientPrice').value=c.basePrice||0;
 }
 
-function submitPrepaidPayment() {
-  const phone = document.getElementById('prepaidPhone').value;
-  const amount = parseFloat(document.getElementById('prepaidAmount').value) || 0;
-  
-  if (amount <= 0) {
-    alert("يرجى إدخال مبلغ صحيح!");
-    return;
-  }
-  
-  const currentBalance = clientsDatabase[phone].prepaidBalance || 0;
-  const newBalance = currentBalance + amount;
-  
-  db.ref(`clients/${phone}/prepaidBalance`).set(newBalance).then(() => {
-    alert(`تم حفظ الدفع المقدم بنجاح.`);
-    closeModal();
-    applyPrepaidDiscountIfInvoiceExists(phone);
-    searchClientForPayment();
-  });
+function savePackagePrice(){
+const name=document.getElementById('packageName').value;
+const price=parseFloat(document.getElementById('packagePrice').value)||0;
+
+ db.ref('packagePrices/'+name).set(price).then(()=>{
+alert('تم حفظ السعر');
+});
 }
 
-function applyPrepaidDiscountIfInvoiceExists(phone) {
-  const targetMonth = document.getElementById('monthPicker').value;
-  db.ref(`invoices/${targetMonth}/${phone}`).once('value', snapshot => {
-    const invoice = snapshot.val();
-    const clientBalance = clientsDatabase[phone]?.prepaidBalance || 0;
-    
-    if (invoice && !invoice.isPaid && clientBalance > 0) {
-      let required = invoice.requiredAmount - invoice.paidAmount;
-      let toDeduct = 0;
-      let newPaidAmount = invoice.paidAmount;
-      let newBalance = clientBalance;
-      
-      if (clientBalance >= required) {
-        toDeduct = required;
-        newPaidAmount = invoice.requiredAmount;
-        newBalance = clientBalance - required;
-        invoice.isPaid = true;
-      } else {
-        toDeduct = clientBalance;
-        newPaidAmount = invoice.paidAmount + clientBalance;
-        newBalance = 0;
-      }
-      
-      db.ref(`invoices/${targetMonth}/${phone}`).update({
-        paidAmount: newPaidAmount,
-        isPaid: invoice.isPaid,
-        prepaidDeducted: (invoice.prepaidDeducted || 0) + toDeduct
-      });
-      db.ref(`clients/${phone}/prepaidBalance`).set(newBalance);
-    }
-  });
+function renderPackages(){
+const tbody=document.getElementById('packagesTable');
+tbody.innerHTML='';
+
+Object.keys(packagePrices).forEach(name=>{
+
+tbody.innerHTML += `
+<tr>
+<td>${name}</td>
+<td>${packagePrices[name]}</td>
+</tr>`;
+});
 }
 
-function openPayModal(phone, name, remaining) {
-  document.getElementById('payPhone').value = phone;
-  document.getElementById('payClientInfo').textContent = `${name} (المستحق: ${remaining} ج)`;
-  document.getElementById('payAmount').value = remaining;
-  document.getElementById('payModal').classList.remove('hidden');
+function importClientsExcel(){
+const file=document.getElementById('clientsExcel').files[0];
+if(!file) return;
+
+const reader=new FileReader();
+
+reader.onload=function(e){
+const data=new Uint8Array(e.target.result);
+const workbook=XLSX.read(data,{type:'array'});
+const sheet=workbook.Sheets[workbook.SheetNames[0]];
+const rows=XLSX.utils.sheet_to_json(sheet,{header:1});
+
+let updates={};
+
+for(let i=1;i<rows.length;i++){
+const row=rows[i];
+if(!row[0]) continue;
+
+let phone=String(row[0]).replace(/^0/, '');
+
+updates[phone]={
+name:row[1]||'',
+packageType:row[2]||'',
+basePrice:parseFloat(row[3])||0,
+prepaidBalance:0
+};
 }
 
-function submitBillPayment() {
-  const phone = document.getElementById('payPhone').value;
-  const amount = parseFloat(document.getElementById('payAmount').value) || 0;
-  const targetMonth = document.getElementById('monthPicker').value;
-  
-  if (amount <= 0) {
-    alert("برجاء إدخال قيمة صحيحة");
-    return;
-  }
-  
-  db.ref(`invoices/${targetMonth}/${phone}`).once('value', snapshot => {
-    const invoice = snapshot.val();
-    if (invoice) {
-      const totalPaid = (invoice.paidAmount || 0) + amount;
-      const isPaid = totalPaid >= invoice.requiredAmount;
-      
-      db.ref(`invoices/${targetMonth}/${phone}`).update({
-        paidAmount: totalPaid,
-        isPaid: isPaid
-      }).then(() => {
-        alert("تم التحصيل بنجاح");
-        closeModal();
-        searchClientForPayment();
-      });
-    }
-  });
+ db.ref('clients').update(updates).then(()=>{
+alert('تم استيراد البيانات');
+});
+};
+
+reader.readAsArrayBuffer(file);
 }
 
-function closeModal() {
-  document.getElementById('prepaidModal').classList.add('hidden');
-  document.getElementById('payModal').classList.add('hidden');
+function processInvoices(){
+const files=document.getElementById('invoiceFiles').files;
+const month=document.getElementById('uploadMonth').value;
+
+if(files.length===0) return;
+
+Array.from(files).forEach(file=>{
+const reader=new FileReader();
+
+reader.onload=function(e){
+const data=new Uint8Array(e.target.result);
+const workbook=XLSX.read(data,{type:'array'});
+const sheet=workbook.Sheets[workbook.SheetNames[0]];
+const rows=XLSX.utils.sheet_to_json(sheet,{header:1});
+
+let updates={};
+
+for(let i=1;i<rows.length;i++){
+const row=rows[i];
+if(!row[0]) continue;
+
+let phone=String(row[0]).replace(/^0/, '');
+let amount=parseFloat(row[1])||0;
+
+const old=invoices?.[month]?.[phone]?.requiredAmount||0;
+
+updates[phone]={
+phone,
+name:clients[phone]?.name||'',
+package:clients[phone]?.packageType||'',
+requiredAmount:old+amount,
+paidAmount:0,
+isPaid:false,
+month
+};
 }
 
-function loadMonthData() {
-  const targetMonth = document.getElementById('monthPicker').value;
-  const currentMonthBills = monthlyInvoices[targetMonth] || {};
-  
-  const cardsWrap = document.getElementById('lineCardsWrap');
-  const statsGrid = document.getElementById('statsGrid');
-  if(!cardsWrap || !statsGrid) return;
-  cardsWrap.innerHTML = "";
-  
-  let totalRequired = 0, totalPaid = 0;
-  
-  for (let phone in currentMonthBills) {
-    const bill = currentMonthBills[phone];
-    totalRequired += bill.requiredAmount;
-    totalPaid += bill.paidAmount;
-    
-    const card = document.createElement('div');
-    card.className = `line-card ${bill.isPaid ? 'paid' : (bill.paidAmount > 0 ? 'partial' : 'unpaid')}`;
-    card.innerHTML = `
-      <div class="lc-top">
-        <div>
-          <span class="lc-name">${bill.name}</span>
-          <div class="lc-phone">0${bill.phone}</div>
-          <div style="font-size:11px; color:var(--gray-dark)">📋 نوع الباقة: ${bill.package}</div>
-        </div>
-        <span class="lc-badge ${bill.isPaid ? 'badge-paid' : 'badge-unpaid'}">
-          ${bill.isPaid ? 'مدفوع كامل' : (bill.paidAmount > 0 ? 'مدفوع جزئي' : 'لم يدفع')}
-        </span>
-      </div>
-      <div class="lc-stats">
-        <div class="ls"><div class="ls-v">${bill.requiredAmount}</div><div class="ls-l">المطلوب</div></div>
-        <div class="ls"><div class="ls-v">${bill.paidAmount}</div><div class="ls-l">المدفوع</div></div>
-        <div class="ls"><div class="ls-v">${(bill.requiredAmount - bill.paidAmount).toFixed(2)}</div><div class="ls-l">المتبقي</div></div>
-      </div>
-    `;
-    cardsWrap.appendChild(card);
-  }
-  
-  statsGrid.innerHTML = `
-    <div class="stat-box"><span class="stat-val">${totalRequired.toFixed(1)} ج</span><span class="stat-lbl">إجمالي مطلوب الشهر</span></div>
-    <div class="stat-box green"><span class="stat-val">${totalPaid.toFixed(1)} ج</span><span class="stat-lbl">إجمالي المحصل</span></div>
-  `;
+ db.ref('invoices/'+month).update(updates);
+};
+
+reader.readAsArrayBuffer(file);
+});
+
+alert('تم رفع الفواتير');
 }
 
-function renderBaseLinesTable() {
-  const tbody = document.getElementById('manageBody');
-  if(!tbody) return;
-  tbody.innerHTML = "";
-  for (let phone in clientsDatabase) {
-    const c = clientsDatabase[phone];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${c.name}</td><td>0${phone}</td><td>${c.packageType || 'باقة'}</td><td>${c.basePrice || 0} ج</td>`;
-    tbody.appendChild(tr);
-  }
+function loadInvoices(){
+const month=document.getElementById('invoiceMonth').value;
+const tbody=document.getElementById('invoiceTable');
+tbody.innerHTML='';
+
+const data=invoices[month]||{};
+
+Object.keys(data).forEach(phone=>{
+const inv=data[phone];
+const remaining=(inv.requiredAmount||0)-(inv.paidAmount||0);
+
+let badge='';
+
+if(inv.isPaid){
+badge='<span class="badge-paid">مدفوع</span>';
+}else if(inv.paidAmount>0){
+badge='<span class="badge-partial">جزئي</span>';
+}else{
+badge='<span class="badge-unpaid">غير مدفوع</span>';
 }
+
+tbody.innerHTML += `
+<tr>
+<td>${inv.name}</td>
+<td>0${phone}</td>
+<td>${month}</td>
+<td>${inv.package}</td>
+<td>${inv.requiredAmount}</td>
+<td>${inv.paidAmount}</td>
+<td>${remaining}</td>
+<td>${badge}</td>
+<td>
+<button onclick="payInvoice('${month}','${phone}')">تحصيل</button>
+<button onclick="cancelPayment('${month}','${phone}')">إلغاء</button>
+</td>
+</tr>`;
+});
+}
+
+function payInvoice(month,phone){
+const amount=prompt('أدخل المبلغ');
+if(!amount) return;
+
+ db.ref('invoices/'+month+'/'+phone).once('value').then(s=>{
+const inv=s.val();
+
+let paid=(inv.paidAmount||0)+parseFloat(amount);
+let isPaid=paid>=inv.requiredAmount;
+
+ db.ref('invoices/'+month+'/'+phone).update({
+paidAmount:paid,
+isPaid
+});
+
+ db.ref('paymentHistory/'+month+'/'+phone).push({
+type:'payment',
+amount,
+date:new Date().toISOString()
+});
+
+loadInvoices();
+});
+}
+
+function cancelPayment(month,phone){
+if(!confirm('إلغاء الدفع؟')) return;
+
+ db.ref('invoices/'+month+'/'+phone).update({
+paidAmount:0,
+isPaid:false
+});
+
+ db.ref('paymentHistory/'+month+'/'+phone).push({
+type:'cancel',
+date:new Date().toISOString()
+});
+
+loadInvoices();
+}
+
+function payAllInvoices(){
+const month=document.getElementById('invoiceMonth').value;
+const data=invoices[month]||{};
+
+Object.keys(data).forEach(phone=>{
+const inv=data[phone];
+
+ db.ref('invoices/'+month+'/'+phone).update({
+paidAmount:inv.requiredAmount,
+isPaid:true
+});
+});
+
+alert('تم تحصيل جميع الفواتير');
+loadInvoices();
+}
+
+function searchClient(){
+const q=document.getElementById('searchInput').value.toLowerCase();
+const results=document.getElementById('searchResults');
+results.innerHTML='';
+
+let totalRequired=0;
+let totalPaid=0;
+
+Object.keys(clients).forEach(phone=>{
+const c=clients[phone];
+
+if((c.name||'').toLowerCase().includes(q)||phone.includes(q)){
+
+let html='';
+
+Object.keys(invoices).forEach(month=>{
+const inv=invoices[month]?.[phone];
+
+if(inv){
+const remaining=inv.requiredAmount-inv.paidAmount;
+
+totalRequired += inv.requiredAmount;
+totalPaid += inv.paidAmount;
+
+html += `
+<div style="padding:10px;border:1px solid #ddd;margin-top:8px;border-radius:8px;">
+<b>${month}</b><br>
+المطلوب: ${inv.requiredAmount} | المدفوع: ${inv.paidAmount} | المتبقي: ${remaining}
+</div>`;
+}
+});
+
+results.innerHTML += `
+<div class="card">
+<h3>${c.name}</h3>
+<div>📱 0${phone}</div>
+<div>💳 ${c.packageType}</div>
+<div>💰 رصيد مقدم: ${c.prepaidBalance||0}</div>
+${html}
+</div>`;
+}
+});
+}
+
+initPackages();
+loadData();
+
 </script>
+
 </body>
 </html>
