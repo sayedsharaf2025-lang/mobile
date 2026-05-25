@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام التحصيل</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+
+<body>
+
+<header>
+📱 نظام التحصيل
+</header>
+
+<div class="container">
+
+<div class="card">
+<h3>➕ إضافة خط</h3>
+
+<input type="text" id="clientName" placeholder="اسم الخط">
+<input type="text" id="clientPhone" placeholder="رقم الخط">
+
+<select id="clientPackage"></select>
+
+<input type="number" id="clientPrice" placeholder="السعر">
+
+<button onclick="saveClient()">حفظ</button>
+</div>
+
+<div class="card">
+<h3>📤 رفع أسماء الخطوط</h3>
+
+<input type="file" id="clientsExcel" accept=".xlsx,.xls">
+
+<button onclick="importClientsExcel()">
+رفع الأسماء
+</button>
+</div>
+
+<div class="card">
+<h3>📤 رفع خطط الأسعار</h3>
+
+<input type="file" id="plansExcel" accept=".xlsx,.xls">
+
+<button onclick="importPackagePlans()">
+رفع الخطط
+</button>
+</div>
+
+<div class="card">
+<h3>💳 أسعار الباقات</h3>
+
+<select id="packageName"></select>
+
+<input type="number" id="packagePrice" placeholder="السعر">
+
+<button onclick="savePackagePrice()">
+حفظ السعر
+</button>
+
+<table>
+<thead>
+<tr>
+<th>الباقة</th>
+<th>السعر</th>
+</tr>
+</thead>
+
+<tbody id="packagesTable"></tbody>
+</table>
+</div>
+
+<div class="card">
+<h3>🗑 إدارة الحذف</h3>
+
+<input type="month" id="deleteMonth">
+
+<button onclick="deleteMonthInvoices()">
+حذف فواتير الشهر
+</button>
+
+<button onclick="deleteAllInvoices()">
+حذف كل الفواتير
+</button>
+
+<button onclick="deleteAllClients()">
+حذف كل الخطوط
+</button>
+
+<button onclick="deleteAllPayments()">
+حذف كل المدفوعات
+</button>
+
+<button onclick="deleteEverything()">
+حذف كل البيانات
+</button>
+</div>
+
+</div>
+
+<script src="js/firebase.js"></script>
+<script src="js/packages.js"></script>
+<script src="js/clients.js"></script>
+<script src="js/upload.js"></script>
+<script src="js/delete.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
