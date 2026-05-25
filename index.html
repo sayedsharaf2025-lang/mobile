@@ -108,37 +108,23 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
 .modal-title{font-size:15px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--blue);}
 .modal-actions{display:flex;gap:8px;margin-top:14px;}
 .modal-actions .btn{margin-top:0;flex:1;}
-/* PDF Preview Table */
 .pdf-preview{margin-top:14px;}
 .pdf-preview table{width:100%;border-collapse:collapse;font-size:12px;}
 .pdf-preview th{background:var(--red);color:white;padding:7px 6px;text-align:center;}
 .pdf-preview td{padding:6px;border-bottom:1px solid var(--gray-mid);text-align:center;}
 .pdf-preview tr:nth-child(even) td{background:var(--gray);}
 .pdf-preview input[type=number]{padding:4px 6px;font-size:12px;width:80px;text-align:center;}
-/* Sort controls */
 .sort-bar{display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap;}
 .sort-bar select{flex:1;min-width:120px;margin:0;padding:7px 10px;font-size:12px;}
 .sort-bar .btn{margin-top:0;padding:7px 12px;width:auto;font-size:12px;}
-/* Search in lines */
 .search-lines{margin-bottom:10px;}
-/* Chart card */
 .chart-wrap{position:relative;height:220px;margin-bottom:10px;}
 .chart-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
 .chart-tab{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gray-mid);background:var(--white);color:var(--gray-dark);cursor:pointer;font-family:inherit;}
 .chart-tab.active{background:var(--blue);color:white;border-color:var(--blue);}
-/* Payment history */
 .pay-hist{font-size:11px;color:var(--gray-dark);margin-top:4px;padding-top:4px;border-top:1px dashed var(--gray-mid);}
-/* Package select */
-.pkg-select-wrap{position:relative;}
-.pkg-datalist{}
-/* Export buttons */
 .export-row{display:flex;gap:8px;flex-wrap:wrap;}
 .export-row .btn{flex:1;min-width:120px;margin-top:0;}
-/* Priority badge */
-.priority-high{background:#fee2e2;border-right:4px solid var(--red);}
-.priority-med{background:var(--yellow-light);border-right:4px solid var(--yellow);}
-.priority-low{background:var(--blue-light);border-right:4px solid var(--blue);}
-/* Responsive */
 @media(min-width:640px){
   .mob-only{display:none;}
   .desk-only{display:block;}
@@ -256,7 +242,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
       <div class="card-title">✏️ مراجعة وتعديل المبالغ</div>
       <div class="alert-item warning" style="font-size:12px;margin-bottom:10px;">⚠️ راجع المبالغ — عدّل أي مبلغ غلط قبل الحفظ</div>
       <div class="pdf-preview" id="pdfPreviewTable"></div>
-      <button class="btn btn-green" onclick="savePdfData()" style="margin-top:12px;">💾 حفظ الفاتورة</button>
+      <button class="btn btn-green" onclick="savePdfData()">💾 حفظ الفاتورة</button>
     </div>
 
     <!-- PDF fallback -->
@@ -430,9 +416,8 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
 <script>
 const KEY_N='vf_names3', KEY_M='vf_months3', KEY_H='vf_history';
 let gN={}, gM={}, gH={}, curData=[], curFilter='all', curMonth='';
-let pendingPdfData=null; // holds parsed PDF data before user confirms
+let pendingPdfData=null; 
 
-/* ========== STORAGE ========== */
 function saveN(){localStorage.setItem(KEY_N,JSON.stringify(gN));}
 function saveM(){localStorage.setItem(KEY_M,JSON.stringify(gM));}
 function saveH(){localStorage.setItem(KEY_H,JSON.stringify(gH));}
@@ -520,7 +505,6 @@ function loadBuiltIn(){
   saveN();
 }
 
-/* ========== TABS ========== */
 function showTab(t,el){
   ['alerts','lines','reports','upload','settings'].forEach(id=>document.getElementById('tab-'+id).classList.add('hidden'));
   document.getElementById('tab-'+t).classList.remove('hidden');
@@ -533,7 +517,6 @@ function showTab(t,el){
   if(t==='upload') populateDeleteMonths();
 }
 
-/* ========== LINES ========== */
 function loadMonth(){
   const m=document.getElementById('monthPicker').value; curMonth=m;
   curData=gM[m]?JSON.parse(JSON.stringify(gM[m])):[];
@@ -551,9 +534,11 @@ function setFilter(f,el){
 function renderLines(){
   let data=[...curData];
   const search=(document.getElementById('searchLines').value||'').trim().toLowerCase();
-  if(search) data=data.filter(d=>(d.name||'').toLowerCase().includes(search)||String(d.phone).includes(search));
+  
+  if(search) {
+    data = data.filter(d => (d.name || '').toLowerCase().includes(search) || String(d.phone).includes(search));
+  }
 
-  // إجمالي الأسماء المتشابهة
   const bar=document.getElementById('nameTotalBar');
   if(search && search.length>=2){
     const matched=data;
@@ -572,17 +557,17 @@ function renderLines(){
   else if(curFilter==='overprice') data=data.filter(d=>d.invoicePrice>d.myPrice);
   else if(curFilter==='prepaid') data=data.filter(d=>d.prepaid);
   else {
-    // الكل: إخفاء اللي دفع كامل ومفيش فرق ومش مقدم
-    data=data.filter(d=>{
-      const fullyPaid=d.paid&&d.paidAmount>=d.myPrice;
-      const hasDiff=d.invoicePrice>d.myPrice;
-      const isPrepaid=d.prepaid;
-      if(fullyPaid&&!hasDiff&&!isPrepaid) return false;
-      return true;
-    });
+    if (!search) {
+      data=data.filter(d=>{
+        const fullyPaid=d.paid&&d.paidAmount>=d.myPrice;
+        const hasDiff=d.invoicePrice>d.myPrice;
+        const isPrepaid=d.prepaid;
+        if(fullyPaid&&!hasDiff&&!isPrepaid) return false;
+        return true;
+      });
+    }
   }
 
-  // Sort
   const sortBy=document.getElementById('sortBy').value;
   if(sortBy==='name') data.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ar'));
   else if(sortBy==='amount_asc') data.sort((a,b)=>a.myPrice-b.myPrice);
@@ -597,7 +582,8 @@ function renderLines(){
   } else if(sortBy==='diff_desc') data.sort((a,b)=>(b.myPrice-b.invoicePrice)-(a.myPrice-a.invoicePrice));
 
   const cw=document.getElementById('lineCardsWrap'), dw=document.getElementById('desktopTblWrap');
-  if(!data.length){cw.innerHTML='<div class="alert-item info">لا توجد بيانات.</div>';dw.innerHTML='';return;}
+  if(!data.length){cw.innerHTML='<div class="alert-item info">لا توجد نتائج بحث مطابقة.</div>';dw.innerHTML='';return;}
+  
   let cards='';
   for(let d of data){
     const rem=Math.max(0,d.myPrice-(d.paidAmount||0));
@@ -617,15 +603,15 @@ function renderLines(){
 
     let actionBtns='';
     if(isPaid && !hasDiff){
-      actionBtns=`<button class="btn btn-gray" onclick="cancelPay('${d.phone}')">↩️ إلغاء</button><button class="btn btn-blue btn-sm" onclick="showHistory('${d.phone}')" style="margin-top:0;">📜 سجل</button>`;
+      actionBtns=`<button class="btn btn-blue" onclick="openPrepaid('${d.phone}')">💳 مقدم</button><button class="btn btn-gray" onclick="cancelPay('${d.phone}')">↩️ إلغاء</button><button class="btn btn-blue btn-sm" onclick="showHistory('${d.phone}')">📜</button>`;
     } else if(isPrepaid){
       actionBtns=`<button class="btn btn-green" onclick="openSettle('${d.phone}')">✅ تسوية</button><button class="btn btn-gray" onclick="cancelPay('${d.phone}')">↩️ إلغاء</button>`;
     } else {
-      actionBtns=`<button class="btn btn-green" onclick="fullPay('${d.phone}')">💰 دفع كامل</button><button class="btn btn-gray" onclick="openPartial('${d.phone}')">💵 جزئي</button><button class="btn btn-blue" onclick="openPrepaid('${d.phone}')" style="background:var(--blue);">💳 مقدم</button>`;
+      actionBtns=`<button class="btn btn-green" onclick="fullPay('${d.phone}')">💰 دفع كامل</button><button class="btn btn-gray" onclick="openPartial('${d.phone}')">💵 جزئي</button><button class="btn btn-blue" onclick="openPrepaid('${d.phone}')">💳 مقدم</button>`;
     }
 
     cards+=`<div class="line-card ${cc}" style="${isPrepaid&&!hasDiff?'border-color:#93c5fd;background:#eff6ff;':''}">
-      <div class="lc-top"><div><div class="lc-name">${nm}</div><div class="lc-phone">0${d.phone}</div></div><span class="lc-badge ${bc}" style="${isPrepaid&&!isPaid?'background:#dbeafe;color:#1d4ed8;':''}">${bt}</span></div>
+      <div class="lc-top"><div><div class="lc-name">${nm}</div><div class="lc-phone">0${d.phone}</div></div><span class="lc-badge ${bc}">${bt}</span></div>
       <div class="lc-pkg">📦 ${d.packageType}</div>
       ${paidDate}
       ${prepaidAlert}
@@ -639,6 +625,7 @@ function renderLines(){
     </div>`;
   }
   cw.innerHTML=cards;
+
   let rows='';
   for(let d of data){
     const rem=Math.max(0,d.myPrice-(d.paidAmount||0));
@@ -651,7 +638,7 @@ function renderLines(){
     const st=isPaid?'✅ دفع':isP?'💛 جزئي('+d.paidAmount+')':isPrepaid?'💳 مقدم('+( d.paidAmount||0)+')':'❌ لم يدفع';
     const nm=d.name||'<i style="color:#aaa">بدون اسم</i>';
     let actBtns=isPaid&&!hasDiff
-      ?`<button class="btn btn-gray btn-sm" onclick="cancelPay('${d.phone}')">↩️</button>`
+      ?`<button class="btn btn-blue btn-sm" onclick="openPrepaid('${d.phone}')">💳 مقدم</button><button class="btn btn-gray btn-sm" onclick="cancelPay('${d.phone}')">↩️</button>`
       :isPrepaid
         ?`<button class="btn btn-green btn-sm" onclick="openSettle('${d.phone}')">✅</button>`
         :`<button class="btn btn-green btn-sm" onclick="fullPay('${d.phone}')">💰</button><button class="btn btn-gray btn-sm" onclick="openPartial('${d.phone}')">💵</button><button class="btn btn-blue btn-sm" onclick="openPrepaid('${d.phone}')">💳</button>`;
@@ -681,7 +668,6 @@ function renderStats(){
   g.classList.remove('hidden');
 }
 
-/* ========== PAYMENT ========== */
 function saveCur(){gM[curMonth]=curData;saveM();renderLines();renderStats();generateAlerts();}
 
 function recordHistory(ph, amount, type){
@@ -725,6 +711,7 @@ function cancelPay(ph){
   const i=curData.findIndex(d=>d.phone===ph);if(i===-1)return;
   recordHistory(ph,curData[i].paidAmount||0,'cancel');
   curData[i].paid=false;curData[i].paidAmount=0;curData[i].paidDate=null;
+  curData[i].prepaid=false;
   saveCur();
 }
 function openPartial(ph){
@@ -745,16 +732,15 @@ function submitPartial(){
   closeModal();saveCur();
 }
 
-/* ========== PREPAID ========== */
 function openPrepaid(ph){
-  const d=curData.find(d=>d.phone===ph)||{};
+  const d=curData.find(d=>d.phone===ph)||(gM[curMonth]||[]).find(e=>e.phone===ph);
   const info=gN[ph]||{};
   document.getElementById('prepaidPhone').value=ph;
-  document.getElementById('prepaidName').textContent=(d.name||info.name||'بدون اسم')+' — 0'+ph;
-  document.getElementById('prepaidPkg').textContent='📦 '+(d.packageType||info.packageType||'');
-  document.getElementById('prepaidLabel').textContent='المبلغ المدفوع مقدماً (سعرك: '+(d.myPrice||info.myPrice||0)+' ج)';
-  document.getElementById('prepaidAmount').value=d.paidAmount||'';
-  document.getElementById('prepaidInfo').textContent='سيتحسب تلقائياً لما ترفع الفاتورة';
+  document.getElementById('prepaidName').textContent=((d?d.name:'')||info.name||'بدون اسم')+' — 0'+ph;
+  document.getElementById('prepaidPkg').textContent='📦 '+((d?d.packageType:'')||info.packageType||'');
+  document.getElementById('prepaidLabel').textContent='المبلغ المدفوع مقدماً للشهر القادم:';
+  document.getElementById('prepaidAmount').value='';
+  document.getElementById('prepaidInfo').textContent='سيتم ترحيل هذا المبلغ كـ رصيد مقدم عند رفع الفاتورة القادمة.';
   document.getElementById('prepaidModal').classList.remove('hidden');
 }
 
@@ -762,7 +748,6 @@ function submitPrepaid(){
   const ph=document.getElementById('prepaidPhone').value;
   const amt=parseFloat(document.getElementById('prepaidAmount').value)||0;
   if(!amt){toast('⚠️ أدخل المبلغ');return;}
-  // لو مش موجود في curData نضيفه
   let i=curData.findIndex(d=>d.phone===ph);
   if(i===-1){
     const info=gN[ph]||{name:'',packageType:'غير معروف',myPrice:0};
@@ -789,7 +774,7 @@ function openSettle(ph){
   if(invAmt>0){
     infoHtml+=`📄 الفاتورة: <b>${invAmt} ج</b><br>`;
     if(diff>0) infoHtml+=`<span style="color:var(--red);">⚠️ فرق متأخر: <b>${diff.toFixed(1)} ج</b></span>`;
-    else infoHtml+=`<span style="color:var(--green);">✅ لا يوجد فرق</span>`;
+    else infoHtml+=`<span style="color:var(--green);">✅ لا يوجد فرق (مغطى بالكامل)</span>`;
   } else {
     infoHtml+=`<span style="color:var(--gray-dark);font-size:12px;">الفاتورة لم ترفع بعد</span>`;
   }
@@ -801,7 +786,6 @@ function submitSettle(){
   const ph=document.getElementById('settlePhone').value;
   const i=curData.findIndex(d=>d.phone===ph);if(i===-1)return;
   const d=curData[i];
-  // التسوية: يدفع الفرق لو في فاتورة، أو يتعامل كدفع كامل
   const finalAmt=d.invoicePrice>0?d.invoicePrice:d.myPrice;
   curData[i].prepaid=false;
   curData[i].paidAmount=finalAmt;
@@ -809,10 +793,9 @@ function submitSettle(){
   curData[i].paidDate=new Date().toLocaleDateString('ar-EG');
   recordHistory(ph,finalAmt,'settle');
   closeModal();saveCur();
-  toast('✅ تمت التسوية');
+  toast('✅ تمت التسوية والدفع الكامل');
 }
 
-/* ========== DELETE INVOICE ========== */
 function populateDeleteMonths(){
   const sel=document.getElementById('deleteMonthSel');
   if(!sel)return;
@@ -835,13 +818,11 @@ function deleteInvoice(){
   toast('🗑️ تم حذف فاتورة '+m);
 }
 
-/* ========== ALERTS ========== */
 function generateAlerts(){
   const months=Object.keys(gM).sort().reverse();
   let html='';
   if(!months.length){document.getElementById('alertsContainer').innerHTML='<div class="alert-item info">ℹ️ لا توجد فواتير بعد.</div>';return;}
 
-  // Priority: urgent debts (3+ months)
   const dMap=new Map();
   months.forEach(m=>{gM[m].forEach(d=>{if(!d.paid&&d.myPrice>0){if(!dMap.has(d.phone))dMap.set(d.phone,{name:d.name||gN[d.phone]?.name||'بدون اسم',phone:d.phone,months:[],debt:0,paid:0});const e=dMap.get(d.phone);e.months.push(m);e.debt+=d.myPrice;e.paid+=(d.paidAmount||0);}});});
 
@@ -852,7 +833,6 @@ function generateAlerts(){
     html+='</div>';
   }
 
-  // Lines without names
   const noName=Object.entries(gN).filter(([,d])=>!d.name||!d.name.trim());
   if(noName.length){
     html+='<div class="card"><div class="card-title">⚠️ خطوط بدون اسم ('+noName.length+')</div>';
@@ -860,7 +840,6 @@ function generateAlerts(){
     html+='</div>';
   }
 
-  // Overprice invoices
   const over=[];
   months.forEach(m=>gM[m].forEach(d=>{if(d.invoicePrice>d.myPrice) over.push({...d,month:m});}));
   html+='<div class="card"><div class="card-title">📈 فواتير أعلى من المتفق عليه</div>';
@@ -868,7 +847,6 @@ function generateAlerts(){
   else{html+='<div class="alert-item success">✅ كل الفواتير مطابقة أو أقل.</div>';}
   html+='</div>';
 
-  // All debts (non-urgent)
   html+='<div class="card"><div class="card-title">💰 كل المتأخرات</div>';
   let hasD=false;
   for(let[,e] of dMap){if(!e.months.length)continue;hasD=true;const rem=(e.debt-e.paid).toFixed(0);const priority=e.months.length>=3?'danger':e.months.length>=2?'warning':'info';html+='<div class="alert-item '+priority+'"><strong>'+e.name+' (0'+e.phone+')</strong>متأخر '+e.months.length+' شهر: '+e.months.join(', ')+'<br><span class="a-badge '+(e.months.length>=3?'red':'orange')+'">إجمالي المديونية: '+rem+' ج</span></div>';}
@@ -878,7 +856,6 @@ function generateAlerts(){
   document.getElementById('alertsContainer').innerHTML=html;
 }
 
-/* ========== REPORTS ========== */
 let chartInst=null;
 function renderReports(){
   const m=document.getElementById('reportMonth').value;
@@ -955,7 +932,6 @@ function showChart(type, el, dataArg, paidArg, partialArg, unpaidArg, tIArg, tMA
   }
 }
 
-/* ========== EXPORT ========== */
 function exportMonthExcel(m){
   const data=gM[m]; if(!data) return;
   const rows=data.map(d=>({
@@ -1025,7 +1001,6 @@ function importData(inp){
   r.readAsText(file); inp.value='';
 }
 
-/* ========== SETTINGS ========== */
 function renderManageTable(){
   const term=document.getElementById('searchInput').value.trim().toLowerCase();
   const tbody=document.getElementById('manageBody');
@@ -1092,7 +1067,6 @@ function deleteLine(ph){
   delete gN[ph]; saveN(); renderManageTable(); toast('🗑️ تم الحذف');
 }
 
-/* ========== EXCEL IMPORT ========== */
 function importExcel(inp){
   const file=inp.files[0]; if(!file) return;
   document.getElementById('xlsTitle').textContent=file.name;
@@ -1127,7 +1101,6 @@ function importExcel(inp){
   reader.readAsArrayBuffer(file);
 }
 
-/* ========== EXCEL INVOICE PROCESSING ========== */
 function onInvoiceXlsChosen(inp){document.getElementById('invoiceXlsTitle').textContent=inp.files[0]?.name||'اضغط لاختيار ملف Excel';}
 
 async function processInvoiceExcel(){
@@ -1142,7 +1115,6 @@ async function processInvoiceExcel(){
     const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
     const found=new Map();
 
-    // Voice Lines: عمود A (0) رقم الموبايل، عمود J (9) Total After Taxes
     const voiceSheet=wb.SheetNames.find(s=>s.toLowerCase().includes('voice'));
     if(voiceSheet){
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[voiceSheet],{header:1,defval:''});
@@ -1153,7 +1125,6 @@ async function processInvoiceExcel(){
       });
     }
 
-    // ADSL Lines: عمود A (0) الرقم، عمود F (5) Total After Taxes
     const adslSheet=wb.SheetNames.find(s=>s.toLowerCase().includes('adsl'));
     if(adslSheet){
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[adslSheet],{header:1,defval:''});
@@ -1166,7 +1137,6 @@ async function processInvoiceExcel(){
 
     if(!found.size){res.innerHTML='<div class="alert-item warning">⚠️ لم يتم العثور على بيانات. تأكد من اختيار ملف فاتورة فودافون الصحيح.</div>';return;}
 
-    // التحقق من كل رقم منفرداً — اللي اترفع قبل كده يتخطى
     const existingMonth=gM[month]||[];
     const alreadyUploaded=new Set(existingMonth.map(e=>e.phone));
 
@@ -1181,21 +1151,21 @@ async function processInvoiceExcel(){
     }
 
     if(!newItems.length){
-      let skipHtml='<div class="alert-item warning">⚠️ كل الأرقام في هذا الشهر مرفوعة بالفعل:<br><ul style="margin:8px 0 0 0;padding-right:16px;font-size:12px;">';
+      let skipHtml='<div class="alert-item warning">⚠️ تم إلغاء التسجيل: كل الأرقام الواردة في هذه الفاتورة مرفوعة بالفعل في هذا الشهر مسبقاً لمنع التكرار.<br><ul style="margin:8px 0 0 0;padding-right:16px;font-size:12px;">';
       skippedItems.forEach(s=>{ skipHtml+=`<li>0${s.phone} ${s.name?'— '+s.name:''}</li>`; });
       skipHtml+='</ul></div>';
       res.innerHTML=skipHtml;
+      document.getElementById('pdfPreviewCard').classList.add('hidden');
       return;
     }
 
     pendingPdfData={month,items:newItems};
 
-    let statusHtml=`<div class="alert-item success">✅ تم العثور على <strong>${found.size}</strong> خط — جديد: <strong>${newItems.length}</strong>`;
+    let statusHtml=`<div class="alert-item success">✅ تم معالجة الفاتورة بنجاح بنظام الفلترة والتحقق — الإجمالي: <strong>${found.size}</strong> خط | جديد ومقبول للتسجيل: <strong>${newItems.length}</strong>`;
     if(skippedItems.length){
-      statusHtml+=` | <span style="color:var(--yellow);font-weight:700;">⚠️ ${skippedItems.length} مرفوع مسبقاً (تم تخطيه)</span>`;
-      statusHtml+=`<div style="margin-top:6px;font-size:11px;color:var(--gray-dark);">الأرقام المتخطاة: `+skippedItems.map(s=>`<b>0${s.phone}</b>`).join('، ')+'</div>';
+      statusHtml+=` | <span style="color:var(--yellow);font-weight:700;">⚠️ تم تخطي ${skippedItems.length} رقم لتجنب تكرار فواتيرهم</span>`;
     }
-    statusHtml+=` — راجع المبالغ أدناه قبل الحفظ.</div>`;
+    statusHtml+=` — راجع المبالغ أدناه قبل الحفظ النهائي.</div>`;
     res.innerHTML=statusHtml;
 
     let tableHtml='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:400px;">';
@@ -1223,7 +1193,6 @@ async function processInvoiceExcel(){
   }catch(e){res.innerHTML=`<div class="alert-item danger">❌ خطأ: ${e.message}</div>`;console.error(e);}
 }
 
-/* ========== PDF PROCESSING (FIXED) ========== */
 function onFileChosen(inp){document.getElementById('uzTitle').textContent=inp.files[0]?.name||'اضغط لاختيار ملف PDF';}
 
 async function processInvoice(){
@@ -1237,24 +1206,21 @@ async function processInvoice(){
     const buf=await fi.files[0].arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:buf}).promise;
 
-    // Extract text with position info from each page
     let allItems=[];
     for(let i=1;i<=pdf.numPages;i++){
       const pg=await pdf.getPage(i);
       const tc=await pg.getTextContent();
-      // store text items with their y-position (for line grouping) and x-position
       const vp=pg.getViewport({scale:1});
       tc.items.forEach(it=>{
         if(it.str.trim()) allItems.push({
           str:it.str.trim(),
           x:it.transform[4],
-          y:Math.round(vp.height - it.transform[5]), // flip y
+          y:Math.round(vp.height - it.transform[5]), 
           page:i
         });
       });
     }
 
-    // Group items into lines by y-coordinate (within 3px tolerance)
     const lines=[];
     allItems.sort((a,b)=>a.page-b.page||a.y-b.y||a.x-b.x);
     let curLine=null, curY=-999, curPage=-1;
@@ -1267,38 +1233,31 @@ async function processInvoice(){
       curLine.items.push(it);
     });
 
-    // Build line strings
     const lineStrs=lines.map(l=>l.items.sort((a,b)=>a.x-b.x).map(i=>i.str).join(' '));
 
-    // Find phone numbers and extract invoice amount from SAME line or next 1-2 lines
     const found=new Map();
     for(let li=0;li<lineStrs.length;li++){
       const lineTokens=lineStrs[li].split(/\s+/);
       for(let ti=0;ti<lineTokens.length;ti++){
         const tok=lineTokens[ti];
-        // Egyptian mobile: 10 digits starting with 1, or 11 digits starting with 01
         let ph=null;
         if(/^1[0-9]{9}$/.test(tok)) ph=tok;
         else if(/^01[0-9]{9}$/.test(tok)) ph=tok.slice(1);
         if(!ph||found.has(ph)) continue;
 
-        // الفاتورة جدول: رقم الخط في السطر وآخر رقم في نفس السطر هو المبلغ الإجمالي
         let inv=0;
-
-        // أولاً: دوّر على آخر رقم مالي في نفس السطر بعد رقم الموبايل
         const afterPhone=lineTokens.slice(lineTokens.indexOf(tok)+1);
         let lastOnLine=0;
         afterPhone.forEach(t=>{
           const v=parseFloat(t.replace(',','.'));
           if(!isNaN(v)&&v>=5&&v<=3000&&t.length<=8&&/^[0-9]+([.,][0-9]{1,2})?$/.test(t)){
-            lastOnLine=v; // بياخد آخر واحد يلاقيه
+            lastOnLine=v; 
           }
         });
 
         if(lastOnLine>0){
           inv=lastOnLine;
         } else {
-          // لو السطر ماعندوش أرقام، دوّر في السطر اللي بعده
           for(let sl=1;sl<=3;sl++){
             if(li+sl>=lineStrs.length) break;
             const nextTokens=lineStrs[li+sl].split(/\s+/);
@@ -1312,14 +1271,12 @@ async function processInvoice(){
             if(lastNext>0){inv=lastNext;break;}
           }
         }
-
         found.set(ph,inv);
       }
     }
 
     if(!found.size){res.innerHTML='<div class="alert-item warning">⚠️ لم يتم العثور على أرقام خطوط.</div>';return;}
 
-    // التحقق من كل رقم منفرداً
     const existingMonthP=gM[month]||[];
     const alreadyUploadedP=new Set(existingMonthP.map(e=>e.phone));
     const newItemsP=[], skippedItemsP=[];
@@ -1332,19 +1289,20 @@ async function processInvoice(){
       }
     }
     if(!newItemsP.length){
-      let skipHtml='<div class="alert-item warning">⚠️ كل الأرقام مرفوعة بالفعل لهذا الشهر.<br><ul style="margin:8px 0 0 0;padding-right:16px;font-size:12px;">';
+      let skipHtml='<div class="alert-item warning">⚠️ تم إلغاء التسجيل: كل الأرقام المكتشفة بالـ PDF تم تسجيل فواتيرها لهذا الشهر مسبقاً لمنع التكرار.<br><ul style="margin:8px 0 0 0;padding-right:16px;font-size:12px;">';
       skippedItemsP.forEach(s=>{ skipHtml+=`<li>0${s.phone} ${s.name?'— '+s.name:''}</li>`; });
       skipHtml+='</ul></div>';
-      res.innerHTML=skipHtml; return;
+      res.innerHTML=skipHtml; 
+      document.getElementById('pdfPreviewCard').classList.add('hidden');
+      return;
     }
     pendingPdfData={month, items:newItemsP};
 
-    let statusHtmlP=`<div class="alert-item success">✅ تم العثور على <strong>${found.size}</strong> خط — جديد: <strong>${newItemsP.length}</strong>`;
-    if(skippedItemsP.length) statusHtmlP+=` | <span style="color:var(--yellow);font-weight:700;">⚠️ ${skippedItemsP.length} مرفوع مسبقاً (تم تخطيه)</span>`;
+    let statusHtmlP=`<div class="alert-item success">✅ تم فحص وتصفية ملف الـ PDF — الإجمالي: <strong>${found.size}</strong> | المقبول للتسجيل: <strong>${newItemsP.length}</strong>`;
+    if(skippedItemsP.length) statusHtmlP+=` | <span style="color:var(--yellow);font-weight:700;">⚠️ تم استبعاد ${skippedItemsP.length} رقم مكررين</span>`;
     statusHtmlP+=' — راجع المبالغ أدناه قبل الحفظ.</div>';
     res.innerHTML=statusHtmlP;
 
-    // Show editable preview
     let tableHtml='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:380px;">';
     tableHtml+='<tr><th style="background:var(--red);color:white;padding:7px 6px;">الاسم</th><th style="background:var(--red);color:white;padding:7px 6px;">الرقم</th><th style="background:var(--red);color:white;padding:7px 6px;">سعرك</th><th style="background:var(--red);color:white;padding:7px 6px;">مبلغ الفاتورة</th></tr>';
     pendingPdfData.items.forEach((d,idx)=>{
@@ -1371,50 +1329,59 @@ function savePdfData(){
   if(!pendingPdfData) return;
   const {month, items}=pendingPdfData;
   let newCount=0, prepaidCount=0, diffCount=0;
-  const monthData=[];
+  
+  if(!gM[month]) gM[month] = [];
+  const monthData = [...gM[month]];
+
   items.forEach((d,idx)=>{
     const editedInv=parseFloat(document.getElementById('inv_'+idx).value)||0;
     if(!gN[d.phone]){gN[d.phone]={name:'',packageType:d.packageType,basePrice:0,myPrice:0};newCount++;}
     const c=gN[d.phone];
-    // هل في دفع مقدم لهذا الشهر؟
-    const existingEntry=(gM[month]||[]).find(e=>e.phone===d.phone);
-    const wasPrepaid=existingEntry&&existingEntry.prepaid;
-    const prepaidAmt=wasPrepaid?(existingEntry.paidAmount||0):0;
+    
+    const existingIndex = monthData.findIndex(e => e.phone === d.phone);
+    const wasPrepaid = existingIndex !== -1 && monthData[existingIndex].prepaid;
+    const prepaidAmt = wasPrepaid ? (monthData[existingIndex].paidAmount || 0) : 0;
+    
     let paid=false, paidAmount=0;
     if(wasPrepaid){
       prepaidCount++;
       if(editedInv<=prepaidAmt){
-        // الفاتورة = سعره أو أقل → دفع كامل
         paid=true; paidAmount=prepaidAmt;
       } else {
-        // الفاتورة أعلى → يظل مقدم مع فرق
         paid=false; paidAmount=prepaidAmt;
         diffCount++;
       }
     }
-    monthData.push({
+
+    const lineObj = {
       phone:d.phone,name:c.name,myPrice:c.myPrice,invoicePrice:editedInv,
       packageType:c.packageType,paid,paidAmount,
       prepaid:wasPrepaid&&!paid,
-      paidDate:wasPrepaid?existingEntry.paidDate:null
-    });
+      paidDate:wasPrepaid?monthData[existingIndex].paidDate:null
+    };
+
+    if(existingIndex !== -1) {
+      monthData[existingIndex] = lineObj; 
+    } else {
+      monthData.push(lineObj); 
+    }
   });
+
   if(newCount){saveN();renderManageTable();}
   gM[month]=monthData; saveM();
-  let msg=`✅ تم حفظ فاتورة <strong>${month}</strong> (${monthData.length} خط)`;
-  if(prepaidCount) msg+=`<br><span class="a-badge blue">💳 ${prepaidCount} مقدم تم تطبيقهم تلقائياً</span>`;
-  if(diffCount) msg+=`<span class="a-badge orange"> ⚠️ ${diffCount} عندهم فرق متأخر</span>`;
-  if(newCount) msg+=`<br><span class="a-badge orange">⚠️ ${newCount} رقم جديد — أضف أسماءهم</span>`;
+  
+  let msg=`✅ تم حفظ الفاتورة لشهر <strong>${month}</strong> بنجاح (إجمالي الخطوط المقيدة: ${monthData.length})`;
+  if(prepaidCount) msg+=`<br><span class="a-badge blue">💳 تم تسوية وتطبيق ${prepaidCount} دفعة مقدمة آلياً</span>`;
+  if(diffCount) msg+=`<span class="a-badge orange"> ⚠️ يتبقى فروق مستحقة على ${diffCount} خط</span>`;
   document.getElementById('uploadResult').innerHTML=`<div class="alert-item success">${msg}</div>`;
   document.getElementById('pdfPreviewCard').classList.add('hidden');
   document.getElementById('hdrSub').textContent='آخر فاتورة: '+month;
   pendingPdfData=null;
   populateDeleteMonths();
   generateAlerts();
-  toast('✅ تم حفظ الفاتورة بنجاح');
+  toast('✅ تم حفظ الفاتورة بنجاح وتلافي التكرار');
 }
 
-/* ========== MODALS ========== */
 function closeModal(){
   document.getElementById('editModal').classList.add('hidden');
   document.getElementById('partialModal').classList.add('hidden');
@@ -1424,7 +1391,6 @@ function closeModal(){
 }
 function toast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1d23;color:white;padding:10px 20px;border-radius:20px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);white-space:nowrap;';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
 
-/* ========== DRAG & DROP ========== */
 ['uploadZone','xlsZone','invoiceXlsZone'].forEach(id=>{
   const z=document.getElementById(id); if(!z)return;
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
