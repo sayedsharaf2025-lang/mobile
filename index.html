@@ -127,7 +127,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
     <div class="card">
       <div class="card-title">📊 رفع فاتورة Excel تراكمية</div>
       <div class="alert-item success" style="margin-bottom:10px; font-size:12px; background: #e6f7ed; padding: 10px; border-radius: 6px;">
-        📌 <strong>قاعدة المعالجة:</strong> إذا نزلت الفاتورة للرقم مسبقاً <strong>لا يتم إعادة تسجيلها</strong>، وإذا لم تكن موجودة <strong>يتم إضافتها</strong> دون مسح الفواتير القديمة.
+        📌 <strong>قاعدة المعالجة:</strong> يتم استخراج البيانات بذكاء من ملف الـ Excel وربطها تصفحياً ولحظياً بالسيرفر.
       </div>
       <div class="upload-zone" style="border: 2px dashed var(--gray-mid); padding: 20px; text-align: center; border-radius: var(--radius);">
         <input type="file" id="invoiceXlsInput" accept=".xlsx,.xls" onchange="processInvoiceExcel(this)">
@@ -189,34 +189,30 @@ input:focus,select:focus{outline:none;border-color:var(--red);}
 </div>
 
 <script>
-// إعدادات Firebase المحدثة والكاملة لتطبيقك
 const firebaseConfig = {
   apiKey: "AIzaSyBfFRxvmhg8aqtuDgXAOofFGpVPklUF-gs",
   authDomain: "mobile-invoic-118d4.firebaseapp.com",
   projectId: "mobile-invoic-118d4",
-  databaseURL: "https://mobile-invoic-118d4-default-rtdb.firebaseio.com/", // رابط قاعدة البيانات الأساسي والناقص مسبقاً
+  databaseURL: "https://mobile-invoic-118d4-default-rtdb.firebaseio.com/",
   storageBucket: "mobile-invoic-118d4.firebasestorage.app",
   messagingSenderId: "795305971254",
   appId: "1:795305971254:web:7e8e874cfd805d33ec1297",
   measurementId: "G-YSV31DFCB4"
 };
 
-// بدء تشغيل Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let clientsDatabase = {}; // دليل أسماء الخطوط وعملائهم الأساسي
-let monthlyInvoices = {};  // الفواتير المسجلة لكل الشهور
+let clientsDatabase = {}; 
+let monthlyInvoices = {};  
 let currentSelectedMonth = "";
 
-// عند تحميل الصفحة
 window.onload = function() {
   const now = new Date();
   currentSelectedMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   document.getElementById('monthPicker').value = currentSelectedMonth;
   document.getElementById('uploadMonth').value = currentSelectedMonth;
   
-  // الاستماع المباشر للبيانات من Firebase لضمان التحديث اللحظي
   db.ref('clients').on('value', snapshot => {
     clientsDatabase = snapshot.val() || {};
     renderBaseLinesTable();
@@ -236,7 +232,7 @@ function showTab(tabName, btn) {
   if(btn) btn.classList.add('active');
 }
 
-// 1. معالجة وحفظ ملف الـ Excel التراكمي دون مسح القديم وبدون تكرار للأرقام المضافة سابقاً للشهر
+// دالة ذكية ومطوّرة لقراءة محتويات ملف الإكسيل بأي مسميات أعمدة
 function processInvoiceExcel(input) {
   const file = input.files[0];
   const targetMonth = document.getElementById('uploadMonth').value;
@@ -245,7 +241,7 @@ function processInvoiceExcel(input) {
     return;
   }
   
-  document.getElementById('uploadStatus').textContent = "جاري قراءة وتحليل ملف الفاتورة...";
+  document.getElementById('uploadStatus').textContent = "جاري فحص الأعمدة وتحليل بيانات الملف...";
   const reader = new FileReader();
   
   reader.onload = function(e) {
@@ -254,42 +250,53 @@ function processInvoiceExcel(input) {
     const sheetName = workbook.SheetNames[0];
     const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     
+    if(json.length === 0) {
+      document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--red)">❌ الملف المرفوع فارغ تماماً من البيانات!</span>`;
+      return;
+    }
+
     let addedCount = 0;
     let skippedCount = 0;
     
-    // جلب الفواتير الحالية المسجلة لهذا الشهر بالذات في الـ Firebase لمنع التكرار
     db.ref(`invoices/${targetMonth}`).once('value', snapshot => {
       const currentMonthBills = snapshot.val() || {};
       
       json.forEach(row => {
-        let phone = String(row['الرقم'] || row['رقم الهاتف'] || row['Phone'] || '').trim();
-        let name = String(row['الاسم'] || row['Name'] || '').trim();
-        let pkg = String(row['خطة الاسعار'] || row['الباقة'] || row['Package'] || '').trim();
-        let price = parseFloat(row['سعر الفاتورة'] || row['المبلغ'] || row['Price'] || row['السعر الأساسي']) || 0;
+        // البحث عن المفاتيح بذكاء ودعم كافة التسميات المتوقعة في شيت الإكسيل
+        let phoneKey = Object.keys(row).find(k => k.includes('الرقم') || k.includes('رقم') || k.includes('الهاتف') || k.includes('Phone') || k.includes('Mobile'));
+        let nameKey = Object.keys(row).find(k => k.includes('الاسم') || k.includes('اسم') || k.includes('Name') || k.includes('العميل'));
+        let pkgKey = Object.keys(row).find(k => k.includes('باقة') || k.includes('الباقة') || k.includes('خطة') || k.includes('Package') || k.includes('نظام'));
+        let priceKey = Object.keys(row).find(k => k.includes('سعر') || k.includes('المبلغ') || k.includes('الفاتورة') || k.includes('Price') || k.includes('الأساسي') || k.includes('المستحق') || k.includes('قيمة'));
+
+        let phone = phoneKey ? String(row[phoneKey]).trim() : '';
+        let name = nameKey ? String(row[nameKey]).trim() : '';
+        let pkg = pkgKey ? String(row[pkgKey]).trim() : '';
+        let price = priceKey ? parseFloat(row[priceKey]) : 0;
         
-        if (!phone) return;
-        if (phone.startsWith('0')) phone = phone.substring(1); // توحيد صيغة الرقم بدون صفر
+        if (!phone || phone === 'undefined' || phone === 'null') return;
         
-        // التحقق الدقيق: لو تم تسجيل هذا الرقم مسبقاً في هذا الشهر لا يتم التسجيل
+        // إزالة الفواصل أو العلامات العشرية المزعجة من تحويل أرقام الهواتف
+        if (phone.includes('.')) phone = phone.split('.')[0];
+        // تنظيف الصفر الأمامي لتوحيد القاعدة في الـ Firebase
+        if (phone.startsWith('0')) phone = phone.substring(1); 
+        
         if (currentMonthBills[phone]) {
           skippedCount++;
         } else {
-          // إذا لم تكن منزلة يتم تسجيلها في الخطوط وحفظها بـ Firebase دون مسح الفواتير القديمة للشهور الأخرى
           currentMonthBills[phone] = {
             phone: phone,
-            name: name || clientsDatabase[phone]?.name || "عميل غير مسجل",
-            package: pkg || clientsDatabase[phone]?.packageType || "باقة افتراضية",
-            requiredAmount: parseFloat((price * 1.45).toFixed(2)), // السعر شامل الإضافة المستهدفة مثلاً
+            name: name && name !== 'undefined' ? name : (clientsDatabase[phone]?.name || "عميل غير مسجل"),
+            package: pkg && pkg !== 'undefined' ? pkg : (clientsDatabase[phone]?.packageType || "باقة افتراضية"),
+            requiredAmount: parseFloat((price * 1.45).toFixed(2)), 
             paidAmount: 0,
             isPaid: false,
             prepaidDeducted: 0
           };
           
-          // تحديث دليل الخطوط الرئيسي تلقائياً إذا كان الخط جديد بالكامل على النظام
-          if (!clientsDatabase[phone] && name) {
+          if (!clientsDatabase[phone] && name && name !== 'undefined') {
             db.ref(`clients/${phone}`).set({
               name: name,
-              packageType: pkg,
+              packageType: pkg && pkg !== 'undefined' ? pkg : "باقة افتراضية",
               basePrice: price
             });
           }
@@ -297,9 +304,10 @@ function processInvoiceExcel(input) {
         }
       });
       
-      // حفظ الفواتير الإضافية الجديدة لنفس الشهر على Firebase بالتراكم
       db.ref(`invoices/${targetMonth}`).update(currentMonthBills).then(() => {
-        document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--green)">✅ تم الانتهاء بنجاح! تم إضافة ${addedCount} فاتورة جديدة، وتخطي ${skippedCount} رقم مسجل مسبقاً في هذا الشهر.</span>`;
+        document.getElementById('uploadStatus').innerHTML = `<span style="color:var(--green)">✅ اكتمل الحفظ! تم إضافة ${addedCount} خط بنجاح، وتخطي ${skippedCount} مكررين.</span>`;
+        // محاكاة نقرة لتحديث العرض الحالي للمستخدم فوراً
+        loadMonthData();
       });
     });
   };
@@ -307,7 +315,6 @@ function processInvoiceExcel(input) {
   reader.readAsArrayBuffer(file);
 }
 
-// 2. شاشة البحث الذكي بالاسم أو الرقم لعرض المستحقات والدفع المقدم
 function searchClientForPayment() {
   const query = document.getElementById('quickSearchInput').value.trim().toLowerCase();
   const resultArea = document.getElementById('quickSearchResultArea');
@@ -315,7 +322,9 @@ function searchClientForPayment() {
   
   if (!query) return;
   
-  // البحث في دليل الخطوط وعبر الفواتير الحالية للمستخدمين
+  let searchNum = query;
+  if (searchNum.startsWith('0')) searchNum = searchNum.substring(1);
+
   const targetMonth = document.getElementById('monthPicker').value;
   const currentMonthBills = monthlyInvoices[targetMonth] || {};
   
@@ -323,23 +332,21 @@ function searchClientForPayment() {
   
   for (let phone in clientsDatabase) {
     const client = clientsDatabase[phone];
-    if (client.name.toLowerCase().includes(query) || phone.includes(query)) {
+    if (client.name.toLowerCase().includes(query) || phone.includes(searchNum)) {
       found = true;
       const invoice = currentMonthBills[phone];
-      
-      // جلب بيانات الرصيد المقدم المخزن للعميل إن وجد
       const prepaidBalance = client.prepaidBalance || 0;
       
-      let invoiceStatusHtml = `<span style="color:var(--red); font-weight:700;">لا توجد فاتورة نازلة لشهر ${targetMonth} حالياً</span>`;
+      let invoiceStatusHtml = `<span style="color:var(--red); font-weight:700;">لا توجد فاتورة لشهر ${targetMonth}</span>`;
       let actionButtons = `<button class="btn btn-blue btn-sm" onclick="openPrepaidModal('${phone}', '${client.name}')">💳 دفع رصيد مقدم</button>`;
       
       if (invoice) {
         const remaining = (invoice.requiredAmount - invoice.paidAmount).toFixed(2);
         if (invoice.isPaid) {
-          invoiceStatusHtml = `<span style="color:var(--green); font-weight:700;">✅ الفاتورة مدفوعة بالكامل لشهر ${targetMonth}</span>`;
+          invoiceStatusHtml = `<span style="color:var(--green); font-weight:700;">✅ الفاتورة مدفوعة</span>`;
         } else {
-          invoiceStatusHtml = `<span style="color:var(--yellow); font-weight:700;">⚠️ مستحق عليه لشهر ${targetMonth}: ${remaining} ج.م (من أصل ${invoice.requiredAmount})</span>`;
-          actionButtons += ` <button class="btn btn-green btn-sm" onclick="openPayModal('${phone}', '${client.name}', ${remaining})">💵 تحصيل الفاتورة</button>`;
+          invoiceStatusHtml = `<span style="color:var(--yellow); font-weight:700;">⚠️ مستحق: ${remaining} ج.م</span>`;
+          actionButtons += ` <button class="btn btn-green btn-sm" onclick="openPayModal('${phone}', '${client.name}', ${remaining})">💵 تحصيل</button>`;
         }
       }
       
@@ -348,28 +355,22 @@ function searchClientForPayment() {
       item.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <strong>👤 ${client.name}</strong> (${client.packageType}) <br>
-            <span style="color:var(--gray-dark)">📱 الرقم: 0${phone}</span> <br>
-            <span style="color:var(--blue); font-weight:600;">💳 رصيد الدفع المقدم الحالي المتاح: ${prepaidBalance} ج.م</span>
+            <strong>👤 ${client.name}</strong><br>
+            <span style="color:var(--gray-dark)">📱 الرقم: 0${phone}</span> | <span style="color:var(--blue)">💳 مقدم: ${prepaidBalance} ج</span>
           </div>
-          <div style="text-align:left;">
-            ${invoiceStatusHtml}
-          </div>
+          <div>${invoiceStatusHtml}</div>
         </div>
-        <div style="margin-top:10px; display:flex; gap:6px; justify-content:flex-end;">
-          ${actionButtons}
-        </div>
+        <div style="margin-top:10px; display:flex; gap:6px; justify-content:flex-end;">${actionButtons}</div>
       `;
       resultArea.appendChild(item);
     }
   }
   
   if (!found) {
-    resultArea.innerHTML = `<div style="color:var(--gray-dark); text-align:center; padding:10px;">لم يتم العثور على أي نتائج تطابق البحث.</div>`;
+    resultArea.innerHTML = `<div style="color:var(--gray-dark); text-align:center; padding:10px;">لم يتم العثور على أي نتائج.</div>`;
   }
 }
 
-// فتح مودال الدفع المقدم
 function openPrepaidModal(phone, name) {
   document.getElementById('prepaidPhone').value = phone;
   document.getElementById('prepaidClientName').textContent = name;
@@ -377,7 +378,6 @@ function openPrepaidModal(phone, name) {
   document.getElementById('prepaidModal').classList.remove('hidden');
 }
 
-// تنفيذ وحفظ الدفع المقدم مع الخصم التلقائي بعد نزول الفاتورة
 function submitPrepaidPayment() {
   const phone = document.getElementById('prepaidPhone').value;
   const amount = parseFloat(document.getElementById('prepaidAmount').value) || 0;
@@ -387,21 +387,17 @@ function submitPrepaidPayment() {
     return;
   }
   
-  // تحديث رصيد الدفع المقدم للعميل بزيادته في قاعدة بيانات الـ Firebase
   const currentBalance = clientsDatabase[phone].prepaidBalance || 0;
   const newBalance = currentBalance + amount;
   
   db.ref(`clients/${phone}/prepaidBalance`).set(newBalance).then(() => {
-    alert(`تم تسجيل مبلغ مقدم ${amount} ج.م لحساب العميل بنجاح. الرصيد المقدم الحالي: ${newBalance} ج.م`);
+    alert(`تم حفظ الدفع المقدم بنجاح.`);
     closeModal();
-    
-    // محاولة تطبيق الخصم والمقاصة فورياً في حال كانت الفاتورة للشهر الحالي منزلة وغير مدفوعة
     applyPrepaidDiscountIfInvoiceExists(phone);
     searchClientForPayment();
   });
 }
 
-// دالة المقاصة والخصم التلقائي من الرصيد المقدم عند تواجد الفاتورة لشهر ما
 function applyPrepaidDiscountIfInvoiceExists(phone) {
   const targetMonth = document.getElementById('monthPicker').value;
   db.ref(`invoices/${targetMonth}/${phone}`).once('value', snapshot => {
@@ -425,7 +421,6 @@ function applyPrepaidDiscountIfInvoiceExists(phone) {
         newBalance = 0;
       }
       
-      // إجراء الخصم والتحديث على Firebase للفاتورة والرصيد المقدم معاً
       db.ref(`invoices/${targetMonth}/${phone}`).update({
         paidAmount: newPaidAmount,
         isPaid: invoice.isPaid,
@@ -436,10 +431,9 @@ function applyPrepaidDiscountIfInvoiceExists(phone) {
   });
 }
 
-// تحصيل الفواتير العادية المباشرة لشهر محدد
 function openPayModal(phone, name, remaining) {
   document.getElementById('payPhone').value = phone;
-  document.getElementById('payClientInfo').textContent = `${name} (المستحق: ${remaining} ج.م)`;
+  document.getElementById('payClientInfo').textContent = `${name} (المستحق: ${remaining} ج)`;
   document.getElementById('payAmount').value = remaining;
   document.getElementById('payModal').classList.remove('hidden');
 }
@@ -450,7 +444,7 @@ function submitBillPayment() {
   const targetMonth = document.getElementById('monthPicker').value;
   
   if (amount <= 0) {
-    alert("يرجى إدخال مبلغ دفع صحيح");
+    alert("برجاء إدخال قيمة صحيحة");
     return;
   }
   
@@ -464,7 +458,7 @@ function submitBillPayment() {
         paidAmount: totalPaid,
         isPaid: isPaid
       }).then(() => {
-        alert("تم تسجيل تحصيل الفاتورة بنجاح");
+        alert("تم التحصيل بنجاح");
         closeModal();
         searchClientForPayment();
       });
@@ -477,13 +471,13 @@ function closeModal() {
   document.getElementById('payModal').classList.add('hidden');
 }
 
-// عرض بيانات الخطوط المفوترة للشهر المحدد
 function loadMonthData() {
   const targetMonth = document.getElementById('monthPicker').value;
   const currentMonthBills = monthlyInvoices[targetMonth] || {};
   
   const cardsWrap = document.getElementById('lineCardsWrap');
   const statsGrid = document.getElementById('statsGrid');
+  if(!cardsWrap || !statsGrid) return;
   cardsWrap.innerHTML = "";
   
   let totalRequired = 0, totalPaid = 0;
@@ -520,14 +514,14 @@ function loadMonthData() {
   `;
 }
 
-// عرض الخطوط الأساسية في الإعدادات
 function renderBaseLinesTable() {
   const tbody = document.getElementById('manageBody');
+  if(!tbody) return;
   tbody.innerHTML = "";
   for (let phone in clientsDatabase) {
     const c = clientsDatabase[phone];
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${c.name}</td><td>0${phone}</td><td>${c.packageType}</td><td>${c.basePrice} ج</td>`;
+    tr.innerHTML = `<td>${c.name}</td><td>0${phone}</td><td>${c.packageType || 'باقة افتراضية'}</td><td>${c.basePrice || 0} ج</td>`;
     tbody.appendChild(tr);
   }
 }
