@@ -1,67 +1,69 @@
-const packageList = [
-"Flex 45 Revamp",
-"Flex 90 Revamp",
-"Business Flex 100"
-];
+// ─── Package Prices Screen ─────────────────────────────────────────
+const pkgs = {
+  render() {
+    const list = document.getElementById('packagesList');
+    if (!list) return;
 
-function initPackages(){
+    // Merge hardcoded list with any saved prices + custom packages
+    const allNames = new Set([
+      ...PACKAGE_LIST,
+      ...Object.keys(STATE.packagePrices)
+    ]);
 
-const select1=document.getElementById('clientPackage');
-const select2=document.getElementById('packageName');
+    let html = '';
+    allNames.forEach(name => {
+      const price = STATE.packagePrices[name] ?? '';
+      const safeId = name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      html += `
+      <div class="pkg-item">
+        <div class="pkg-name">${name}</div>
+        <input
+          class="pkg-price-input"
+          type="number"
+          id="pkg_${safeId}"
+          value="${price}"
+          placeholder="السعر"
+          onchange="pkgs.savePrice('${name}', this.value)"
+          onkeydown="if(event.key==='Enter') pkgs.savePrice('${name}', this.value)"
+        >
+      </div>`;
+    });
 
-packageList.forEach(p=>{
+    list.innerHTML = html;
+  },
 
-select1.innerHTML += `<option value="${p}">${p}</option>`;
+  async savePrice(name, value) {
+    const price = parseFloat(value);
+    if (isNaN(price) || price < 0) {
+      showToast('أدخل سعراً صحيحاً', 'error');
+      return;
+    }
+    await dbSavePackagePrice(name, price);
+    showToast(`تم حفظ سعر ${name} ✅`, 'success');
+  },
 
-select2.innerHTML += `<option value="${p}">${p}</option>`;
-});
-}
+  openAdd() {
+    const form = document.getElementById('addPackageForm');
+    form.classList.toggle('hidden');
+    if (!form.classList.contains('hidden')) {
+      document.getElementById('newPackageName').value  = '';
+      document.getElementById('newPackagePrice').value = '';
+      setTimeout(() => document.getElementById('newPackageName').focus(), 100);
+    }
+  },
 
-function savePackagePrice(){
+  closeAdd() {
+    document.getElementById('addPackageForm').classList.add('hidden');
+  },
 
-const name=document.getElementById('packageName').value;
+  async addNew() {
+    const name  = document.getElementById('newPackageName').value.trim();
+    const price = parseFloat(document.getElementById('newPackagePrice').value) || 0;
 
-const price=parseFloat(document.getElementById('packagePrice').value)||0;
+    if (!name) { showToast('أدخل اسم الباقة', 'error'); return; }
 
-db.ref('packagePrices/'+name).set(price).then(()=>{
-
-Object.keys(clients).forEach(phone=>{
-
-if(clients[phone].packageType===name){
-
-db.ref('clients/'+phone).update({
-basePrice:price
-});
-}
-});
-
-alert('تم تحديث الأسعار');
-});
-}
-
-function loadPackages(){
-
-db.ref('packagePrices').on('value',s=>{
-
-packagePrices=s.val()||{};
-
-renderPackages();
-});
-}
-
-function renderPackages(){
-
-const tbody=document.getElementById('packagesTable');
-
-tbody.innerHTML='';
-
-Object.keys(packagePrices).forEach(name=>{
-
-tbody.innerHTML += `
-<tr>
-<td>${name}</td>
-<td>${packagePrices[name]}</td>
-</tr>
-`;
-});
-}
+    await dbSavePackagePrice(name, price);
+    showToast(`تم إضافة الباقة: ${name} ✅`, 'success');
+    this.closeAdd();
+  }
+};
